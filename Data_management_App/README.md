@@ -51,3 +51,7 @@ src/
 
 - **JWT 认证**：通过 Axios 拦截器在每个请求中自动携带安全令牌。
 - **图像优化**：头像上传使用 Canvas API 预处理，大幅减少带宽消耗和后端存储压力。
+
+## 源码仓库
+
+[https://github.com/sabina233/Online_DataManagement](https://github.com/sabina233/Online_DataManagement)

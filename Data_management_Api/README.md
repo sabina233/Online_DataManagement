@@ -28,7 +28,7 @@ DataManagementApi/
 └── Program.cs         # 应用启动、中间件及依赖注入配置
 ```
 
-## 运行南
+## 运行指南
 
 1. **配置数据库**：在 `appsettings.json` 中修改 `DefaultConnection` 连接串。
 2. **还原包**：在根目录执行 `dotnet restore`。
@@ -39,3 +39,7 @@ DataManagementApi/
 
 > [!NOTE]
 > 当前核心业务接口已启用 `[Authorize]` 保护。登录后需获取 Token 并通过 `Authorization: Bearer <token>` 请求头进行访问。
+
+## 源码仓库
+
+[https://github.com/sabina233/Online_DataManagement](https://github.com/sabina233/Online_DataManagement)
