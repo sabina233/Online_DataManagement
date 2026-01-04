@@ -3,6 +3,7 @@ using DataManagementApi.Data;
 using DataManagementApi.Models;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Authorization;
+using System.Reflection;
 
 namespace DataManagementApi.Controllers
 {
@@ -25,10 +26,13 @@ namespace DataManagementApi.Controllers
         /// 检查数据冲突（防止重复录入）
         /// </summary>
         [HttpGet("check-conflict")]
-        public async Task<ActionResult> CheckConflict(int year, string month, string item, string location)
+        public async Task<ActionResult> CheckConflict(int year, string month, string item, string location, string brand)
         {
-            var record = await _context.DataRecords
-                                       .FirstOrDefaultAsync(r => r.Year == year && r.Item == item && r.Location == location);
+            var query = GetQueryableByBrand(brand);
+            if (query == null) return BadRequest("Invalid Brand");
+
+            // Corrected: Cast to BaseRecord to access common properties
+            var record = await query.FirstOrDefaultAsync(r => r.Year == year && r.Item == item && r.Location == location);
 
             if (record == null)
             {
@@ -58,27 +62,47 @@ namespace DataManagementApi.Controllers
         /// </summary>
         private double GetPropValue(object obj, string name)
         {
-            var prop = obj.GetType().GetProperty(name, System.Reflection.BindingFlags.IgnoreCase | System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance);
+            var prop = obj.GetType().GetProperty(name, BindingFlags.IgnoreCase | BindingFlags.Public | BindingFlags.Instance);
             if (prop == null) return 0;
-            return Convert.ToDouble(prop.GetValue(obj));
+            var val = prop.GetValue(obj);
+            return val == null ? 0 : Convert.ToDouble(val);
         }
 
         /// <summary>
         /// 获取数据列表
         /// </summary>
-        /// <param name="brand">可选品牌筛选</param>
+        /// <param name="brand">必填：品牌筛选</param>
         /// <returns>数据记录数组</returns>
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<DataRecord>>> GetRecords(string? brand = null)
+        public async Task<ActionResult<IEnumerable<BaseRecord>>> GetRecords(string? brand = null)
         {
-            // 如果不传品牌，返回所有数据，供大屏汇总使用
             if (string.IsNullOrEmpty(brand))
             {
-                return await _context.DataRecords.ToListAsync();
+                // 如果不传品牌，返回所有数据汇总（Union All）
+                // 仅用于大屏汇总，性能消耗较大，建议前端明确传参
+                var allRecords = new List<BaseRecord>();
+                allRecords.AddRange(await _context.SteriliteRecords.ToListAsync());
+                allRecords.AddRange(await _context.NikeRecords.ToListAsync());
+                allRecords.AddRange(await _context.TJXRecords.ToListAsync());
+                allRecords.AddRange(await _context.LandmarkSplashRecords.ToListAsync());
+                allRecords.AddRange(await _context.LandmarkBBSRecords.ToListAsync());
+                allRecords.AddRange(await _context.LandmarkMAXRecords.ToListAsync());
+                allRecords.AddRange(await _context.NilronRecords.ToListAsync());
+                allRecords.AddRange(await _context.WalmartRecords.ToListAsync());
+                allRecords.AddRange(await _context.HMRecords.ToListAsync());
+                allRecords.AddRange(await _context.TTIRecords.ToListAsync());
+                allRecords.AddRange(await _context.TATARecords.ToListAsync());
+                allRecords.AddRange(await _context.InditexRecords.ToListAsync());
+                allRecords.AddRange(await _context.DCLRecords.ToListAsync());
+                allRecords.AddRange(await _context.PadiniRecords.ToListAsync());
+                allRecords.AddRange(await _context.KMARTRecords.ToListAsync());
+                return allRecords;
             }
-            return await _context.DataRecords
-                                 .Where(r => r.Item == brand)
-                                 .ToListAsync();
+
+            var query = GetQueryableByBrand(brand);
+            if (query == null) return BadRequest($"Brand '{brand}' not supported.");
+
+            return await query.ToListAsync();
         }
 
         /// <summary>
@@ -87,74 +111,148 @@ namespace DataManagementApi.Controllers
         [HttpGet("brands")]
         public async Task<ActionResult<IEnumerable<string>>> GetBrands()
         {
-            var items = await _context.DataRecords
-                                 .Select(r => r.Item)
-                                 .Distinct()
-                                 .Where(i => i != null)
-                                 .ToListAsync();
-            return Ok(items.Select(i => i!));
+            // 固定返回支持的品牌列表，后续可改为查库
+            var brands = new List<string>
+            {
+                "Sterilite", "Nike", "TJX", "Landmark-Splash", "Landmark-BBS", "Landmark-MAX",
+                "Nilron", "Walmart", "H&M", "TTI", "TATA", "Inditex", "DCL", "Padini", "KMART"
+            };
+            return Ok(brands);
         }
 
         /// <summary>
         /// 保存或更新单条数据记录
         /// </summary>
         [HttpPost]
-        public async Task<ActionResult<DataRecord>> SaveRecord(DataRecord record)
+        public async Task<ActionResult<BaseRecord>> SaveRecord([FromBody] Dictionary<string, object> payload)
         {
+            // 由于多态反序列化复杂，这里接收 Dictionary 手动处理
+            if (!payload.ContainsKey("brand") || payload["brand"] == null)
+                return BadRequest("Brand is required.");
+
+            string brand = payload["brand"].ToString()!;
+            
+            // 提取通用属性
+            var json = System.Text.Json.JsonSerializer.Serialize(payload);
+            
+            // 根据 Brand 反序列化为具体类型
+            BaseRecord? record = null;
+            var options = new System.Text.Json.JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+
+            switch(brand) {
+                case "Sterilite": record = System.Text.Json.JsonSerializer.Deserialize<SteriliteRecord>(json, options); break;
+                case "Nike": record = System.Text.Json.JsonSerializer.Deserialize<NikeRecord>(json, options); break;
+                case "TJX": record = System.Text.Json.JsonSerializer.Deserialize<TJXRecord>(json, options); break;
+                case "Landmark-Splash": record = System.Text.Json.JsonSerializer.Deserialize<LandmarkSplashRecord>(json, options); break;
+                case "Landmark-BBS": record = System.Text.Json.JsonSerializer.Deserialize<LandmarkBBSRecord>(json, options); break;
+                case "Landmark-MAX": record = System.Text.Json.JsonSerializer.Deserialize<LandmarkMAXRecord>(json, options); break;
+                case "Nilron": record = System.Text.Json.JsonSerializer.Deserialize<NilronRecord>(json, options); break;
+                case "Walmart": record = System.Text.Json.JsonSerializer.Deserialize<WalmartRecord>(json, options); break;
+                case "H&M": record = System.Text.Json.JsonSerializer.Deserialize<HMRecord>(json, options); break;
+                case "TTI": record = System.Text.Json.JsonSerializer.Deserialize<TTIRecord>(json, options); break;
+                case "TATA": record = System.Text.Json.JsonSerializer.Deserialize<TATARecord>(json, options); break;
+                case "Inditex": record = System.Text.Json.JsonSerializer.Deserialize<InditexRecord>(json, options); break;
+                case "DCL": record = System.Text.Json.JsonSerializer.Deserialize<DCLRecord>(json, options); break;
+                case "Padini": record = System.Text.Json.JsonSerializer.Deserialize<PadiniRecord>(json, options); break;
+                case "KMART": record = System.Text.Json.JsonSerializer.Deserialize<KMARTRecord>(json, options); break;
+                default: return BadRequest("Unknown brand");
+            }
+
+            if (record == null) return BadRequest("Invalid data");
+
+            // 保存逻辑
             if (record.Id > 0)
             {
-                var existing = await _context.DataRecords.FindAsync(record.Id);
+                var dbSet = GetDbSetObjectByBrand(brand);
+                var existing = await dbSet.FindAsync(record.Id);
                 if (existing != null)
                 {
-                    // 更新并重算计算字段
-                    CalculateComputedFields(record);
+                    CalculateComputedFields((BaseRecord)record);
                     _context.Entry(existing).CurrentValues.SetValues(record);
                     await _context.SaveChangesAsync();
                     return Ok(existing);
                 }
             }
             
-            // 执行计算
             CalculateComputedFields(record);
-
-            // 新增记录
-            _context.DataRecords.Add(record);
+            await AddRecordToDb(brand, record);
             await _context.SaveChangesAsync();
             return Ok(record);
         }
         
-        /// <summary>
-        /// 批量保存数据记录
-        /// </summary>
-        [HttpPost("batch")]
-        public async Task<ActionResult> BatchSave(IEnumerable<DataRecord> records)
+        // 辅助方法：添加记录到对应的 DbSet
+        private async Task AddRecordToDb(string brand, BaseRecord record)
         {
-            foreach (var record in records)
+             switch (brand)
             {
-                if (record.Id > 0)
-                {
-                    var existing = await _context.DataRecords.FindAsync(record.Id);
-                    if (existing != null)
-                    {
-                        CalculateComputedFields(record);
-                        _context.Entry(existing).CurrentValues.SetValues(record);
-                        continue;
-                    }
-                }
-                
-                // 执行计算
-                CalculateComputedFields(record);
-                
-                _context.DataRecords.Add(record);
+                case "Sterilite": await _context.SteriliteRecords.AddAsync((SteriliteRecord)record); break;
+                case "Nike": await _context.NikeRecords.AddAsync((NikeRecord)record); break;
+                case "TJX": await _context.TJXRecords.AddAsync((TJXRecord)record); break;
+                case "Landmark-Splash": await _context.LandmarkSplashRecords.AddAsync((LandmarkSplashRecord)record); break;
+                case "Landmark-BBS": await _context.LandmarkBBSRecords.AddAsync((LandmarkBBSRecord)record); break;
+                case "Landmark-MAX": await _context.LandmarkMAXRecords.AddAsync((LandmarkMAXRecord)record); break;
+                case "Nilron": await _context.NilronRecords.AddAsync((NilronRecord)record); break;
+                case "Walmart": await _context.WalmartRecords.AddAsync((WalmartRecord)record); break;
+                case "H&M": await _context.HMRecords.AddAsync((HMRecord)record); break;
+                case "TTI": await _context.TTIRecords.AddAsync((TTIRecord)record); break;
+                case "TATA": await _context.TATARecords.AddAsync((TATARecord)record); break;
+                case "Inditex": await _context.InditexRecords.AddAsync((InditexRecord)record); break;
+                case "DCL": await _context.DCLRecords.AddAsync((DCLRecord)record); break;
+                case "Padini": await _context.PadiniRecords.AddAsync((PadiniRecord)record); break;
+                case "KMART": await _context.KMARTRecords.AddAsync((KMARTRecord)record); break;
             }
-            await _context.SaveChangesAsync();
-            return Ok();
+        }
+
+        private dynamic GetDbSetObjectByBrand(string brand)
+        {
+             switch (brand)
+            {
+                case "Sterilite": return _context.SteriliteRecords;
+                case "Nike": return _context.NikeRecords;
+                case "TJX": return _context.TJXRecords;
+                case "Landmark-Splash": return _context.LandmarkSplashRecords;
+                case "Landmark-BBS": return _context.LandmarkBBSRecords;
+                case "Landmark-MAX": return _context.LandmarkMAXRecords;
+                case "Nilron": return _context.NilronRecords;
+                case "Walmart": return _context.WalmartRecords;
+                case "H&M": return _context.HMRecords;
+                case "TTI": return _context.TTIRecords;
+                case "TATA": return _context.TATARecords;
+                case "Inditex": return _context.InditexRecords;
+                case "DCL": return _context.DCLRecords;
+                case "Padini": return _context.PadiniRecords;
+                case "KMART": return _context.KMARTRecords;
+                default: throw new Exception("Unknown brand");
+            }
+        }
+
+        private IQueryable<BaseRecord>? GetQueryableByBrand(string brand)
+        {
+            switch (brand)
+            {
+                case "Sterilite": return _context.SteriliteRecords;
+                case "Nike": return _context.NikeRecords;
+                case "TJX": return _context.TJXRecords;
+                case "Landmark-Splash": return _context.LandmarkSplashRecords;
+                case "Landmark-BBS": return _context.LandmarkBBSRecords;
+                case "Landmark-MAX": return _context.LandmarkMAXRecords;
+                case "Nilron": return _context.NilronRecords;
+                case "Walmart": return _context.WalmartRecords;
+                case "H&M": return _context.HMRecords;
+                case "TTI": return _context.TTIRecords;
+                case "TATA": return _context.TATARecords;
+                case "Inditex": return _context.InditexRecords;
+                case "DCL": return _context.DCLRecords;
+                case "Padini": return _context.PadiniRecords;
+                case "KMART": return _context.KMARTRecords;
+                default: return null;
+            }
         }
 
         /// <summary>
         /// 计算汇总字段（季度和差异）
         /// </summary>
-        private void CalculateComputedFields(DataRecord r)
+        private void CalculateComputedFields(BaseRecord r)
         {
             // 每月差异计算
             r.Jan_diff = CalculateDiff(r.Jan_ac, r.Jan_fc);

@@ -52,9 +52,8 @@ export const useDataStore = defineStore('data', () => {
         try {
             const res = await api.get<string[]>('/Data/brands');
             if (res.data && res.data.length > 0) {
-                // 合并默认值并去重
-                const set = new Set([...brands.value, ...res.data]);
-                brands.value = Array.from(set);
+                // Backend now returns the authoritative list of 15 brands
+                brands.value = res.data;
             }
         } catch (e) {
             console.error('获取品牌列表失败:', e);
@@ -92,8 +91,11 @@ export const useDataStore = defineStore('data', () => {
     /**
      * 保存或更新单条数据记录
      */
-    async function saveRecord(newRecord: DataRecord) {
+    async function saveRecord(newRecord: DataRecord & { brand?: string }) {
         try {
+            // Ensure brand is set (backend requires it to route to correct table)
+            // Ideally brand should be passed explicitly. Fallback to item if it matches a known brand is risky if item is a SKU.
+            // So we assume the caller sets 'brand'.
             const res = await api.post<DataRecord>('/Data', newRecord);
 
             // 更新本地状态
@@ -105,10 +107,6 @@ export const useDataStore = defineStore('data', () => {
                 records.value.push(saved);
             }
 
-            // 如果引入了新品牌，更新品牌列表
-            if (saved.item && !brands.value.includes(saved.item)) {
-                brands.value.push(saved.item);
-            }
         } catch (e) {
             console.error('保存记录失败:', e);
             throw e;

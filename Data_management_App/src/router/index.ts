@@ -50,7 +50,20 @@ const router = createRouter({
                 {
                     path: 'big-screen',
                     name: 'big-screen',
-                    component: () => import('../views/BigScreenView.vue')
+                    component: () => import('../views/BigScreenView.vue'),
+                    meta: { title: 'layout.big_screen' }
+                },
+                {
+                    path: 'orders/kmart',
+                    name: 'kmart-order',
+                    component: () => import('../views/KmartOrderView.vue'),
+                    meta: { title: 'Kmart 报表' }
+                },
+                {
+                    path: 'orders/kmart/entry',
+                    name: 'kmart-entry',
+                    component: () => import('../views/KmartEntryView.vue'),
+                    meta: { title: 'Kmart 录入' }
                 }
             ]
         }

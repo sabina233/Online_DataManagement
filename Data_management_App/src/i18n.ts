@@ -21,7 +21,15 @@ const messages = {
             logout: 'Logout',
             profile: 'User Profile',
             user_management: 'User Management',
-            big_screen: 'Big Screen'
+            big_screen: 'Big Screen',
+            kmart: 'Kmart',
+            kmart_entry: 'Kmart Entry',
+            kmart_report: 'Kmart Report',
+            stock_group: 'Brand Stock Data',
+            order_group: 'Brand Order Data'
+        },
+        app: {
+            title: 'Data Management System'
         },
         home: {
             hello: 'Hello, {name}! 👋',
@@ -111,7 +119,15 @@ const messages = {
             logout: '退出登录',
             profile: '用户资料',
             user_management: '用户管理',
-            big_screen: '大屏报表'
+            big_screen: '大屏报表',
+            kmart: 'Kmart',
+            kmart_entry: 'KMART 录入',
+            kmart_report: 'KMART 报表',
+            stock_group: '品牌备库数据',
+            order_group: '品牌站点接单数据'
+        },
+        app: {
+            title: '数据管理系统'
         },
         home: {
             hello: '你好, {name}! 👋',

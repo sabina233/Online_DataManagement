@@ -1,45 +1,68 @@
-# 数据管理系统 - 后端 API (ASP.NET Core 10)
+# 数据管理系统 - 后端 (.NET Core API)
 
-这是一个基于 .NET 10 的高性能聚合数据管理系统后端，为企业提供多维度的实际（AC）与预测（FC）数据管理、分析及大屏展示能力。
+这是数据管理系统的后端服务，基于 **ASP.NET Core Web API** 构建。它提供安全的数据接口，支持基于 JWT 的身份验证，并连接 SQL Server 数据库进行持久化存储。
 
-## 主要功能
+## 核心技术栈
 
-- **JWT 安全认证**：引入基于 JSON Web Token 的身份验证机制，确保数据接口安全。
-- **数据冲突检测**：在数据入库前自动检查是否存在冲突，保证数据一致性。
-- **自动计算逻辑**：后台自动计算月度达成率、季度累计及汇总数据。
-- **批量处理**：支持数据的大批量保存与更新。
-- **Swagger 集成**：内置可视化 API 文档，支持直接在界面进行 Token 认证调试。
+- **框架**: ASP.NET Core 8.0 (或更早版本 compatible)
+- **ORM**: Entity Framework Core (First-Code / Manual Migration)
+- **数据库**: Microsoft SQL Server
+- **文档**: Swagger UI
+- **鉴权**: JWT (JSON Web Token)
 
-## 技术栈
-
-- **框架**：ASP.NET Core 10.0 (Web API)
-- **数据库**：Entity Framework Core 10 (支持 SQL Server 和 内存数据库)
-- **认证**：Microsoft.AspNetCore.Authentication.JwtBearer
-- **文档**：Swashbuckle (Swagger)
-
-## 项目结构
+## 目录结构
 
 ```text
 DataManagementApi/
-├── Controllers/       # API 控制器 (Auth认证, Data业务数据, User用户管理)
-├── Data/              # 数据库上下文 (AppDbContext)
-├── Models/            # 数据模型类 (User, DataRecord)
-├── appsettings.json   # 配置文件 (包含数据库连接串及 JWT 密钥)
-└── Program.cs         # 应用启动、中间件及依赖注入配置
+├── Controllers/     # API 控制器 (AuthController, BrandController, OrderController)
+├── Data/            # 数据库上下文 (ApplicationDbContext)
+├── Models/          # 实体模型 (User, Brand, KmartRecord 等)
+├── DTOs/            # 数据传输对象 (LoginDto, RegisterDto)
+└── Program.cs       # 程序入口与服务配置
 ```
 
-## 运行指南
+## 核心功能模块
 
-1. **配置数据库**：在 `appsettings.json` 中修改 `DefaultConnection` 连接串。
-2. **还原包**：在根目录执行 `dotnet restore`。
-3. **运行**：执行 `dotnet run`。
-4. **访问调试**：浏览器打开 `http://localhost:5071/swagger`。
+1.  **身份认证 (System Auth)**
+    *   `/api/auth/login`: 用户登录，颁发 ISO 格式 JWT Token。
+    *   `/api/auth/register`: 新用户注册（默认角色为 User）。
+    *   **密码安全**: 使用 BCrypt 或强哈希算法（视具体实现）存储密码。
 
-## 安全性说明
+2.  **品牌数据管理 (Brand Management)**
+    *   提供各品牌（如 Kmart, Target 等）的库存与订单数据增删改查。
+    *   **动态 Schema**: 支持不同品牌拥有不同的数据字段结构。
 
-> [!NOTE]
-> 当前核心业务接口已启用 `[Authorize]` 保护。登录后需获取 Token 并通过 `Authorization: Bearer <token>` 请求头进行访问。
+3.  **Kmart 专项业务**
+    *   `/api/orders/kmart/*`: 处理 Kmart 特有的 RFID 与订单数据。
+    *   支持按月、按类目聚合查询。
+    *   自动记录 `ModifiedBy` 字段，实现审计追踪。
 
-## 源码仓库
+## 快速开始
 
-[https://github.com/sabina233/Online_DataManagement](https://github.com/sabina233/Online_DataManagement)
+### 1. 数据库配置
+确保本地安装了 SQL Server (Express 或 Developer 版)。
+在 `appsettings.json` 中配置连接字符串：
+```json
+"ConnectionStrings": {
+  "DefaultConnection": "Server=localhost;Database=DataManagementDB;Trusted_Connection=True;TrustServerCertificate=True;"
+}
+```
+
+### 2. 数据库迁移
+项目当前使用手动迁移脚本（在 `Program.cs` 中实现）。
+只需运行项目，系统会自动检查并创建所需的表结构（`Users`, `Brands`, `KmartDailyRecords` 等）。
+
+### 3. 运行项目
+在项目根目录下运行：
+```bash
+dotnet run
+```
+或者使用 Visual Studio / VS Code 打开并启动调试。
+
+### 4. 访问 API 文档
+启动成功后，访问: `https://localhost:7123/swagger` (端口可能不同，请查看控制台输出) 可查看完整的 API 文档。
+
+## 安全特性
+
+- **CORS 策略**: 配置了允许前端开发端口跨域访问。
+- **Authorize 属性**: 敏感接口均受全权保护，必须在 Header 中携带 `Bearer <token>`。

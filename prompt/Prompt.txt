@@ -1,0 +1,43 @@
+文档：
+前端功能实现：
+一、数据的录入：
+  1、录入数据
+  手动录入：根据要求字段名称，选择品牌，填入字段值
+  自动录入：拖入excel表格自动读取对应字段的值存入数据库中,拖入前需选择当前品牌(Brand)与年份(Year)，表格字段固定见下文表结构定义
+  2、数据校验
+  入库前检查是否存在冲突，是否存在重复录入数据，检查方式为相同品牌（Brand）相同站点（Location）下，有重复的料号（Item）数据
+二、数据的展示
+  1、展示表格、差异柱状图和折线图
+    左侧边栏选择品牌数据，品牌种类根据接口返回。选择品牌右侧主页面显示一张数据表格，列出该品牌所有数据；一张横坐标为该品牌不同站点（Location）AC与FC合计值的差异柱状图，要求可以筛选1月到某个月的总和（AC和FC）展示。另一张是横坐标为月份的该品牌AC折线图。总共3张表，一张表格，两张图表。
+三、用户权限管理
+   管理员账户可对用户进行管理查看。用户可在个人资料中修改自己的信息
+后端功能实现（基于asp.net）：
+一、表结构定义
+  总共有
+  Sterilite
+  Nike
+TJX
+Landmark-Splash
+Landmark-BBS
+Landmark-MAX
+Nilron
+Walmart
+H&M
+TTI
+TATA
+Inditex
+DCL
+Padini
+KMART
+15款品牌，字段为：Location、Item 、JanAC、 JanFC、JanAC vs FC、	Feb AC	、Feb FC、	Feb AC vs FC、	Mar AC、	Mar FC、	Mar AC vs FC、	Q1 AC 	、Q1 FC、	Q1 AC vs FC；Apr FC	Apr AC vs FC	May AC	May FC	May AC vs FC	Jun AC	Jun FC	Jun AC vs FC	Q2 AC	Q2 FC	Q2 AC vs FC；Jul FC	Jul AC vs FC	Aug AC	Aug FC	Aug AC vs FC	Sep AC	Sep FC	Sep AC vs FC	Q3 AC	Q3 FC	Q3 AC vs FC
+；Oct FC	Oct AC vs FC	Nov AC	Nov FC	Nov AC vs FC	Dec AC	Dec FC	Dec AC vs FC	Q4 AC	Q4 FC	Q4 AC vs FC  Year,每款品牌在数据库中独立建表。再建一张表管理所有品牌，包含所有品牌（Brand）
+
+二、接口设置
+  1、登录接口
+  2、数据录入接口
+  3、数据查询接口
+  4、用户管理接口
+三、与数据库的交互
+efcore
+
+  

@@ -57,10 +57,92 @@ using (var scope = app.Services.CreateScope())
             var context = services.GetRequiredService<AppDbContext>();
             context.Database.EnsureCreated(); 
 
-            // [HACK] Ensure Year column exists if not added by EnsureCreated on existing DB
-            try {
-                context.Database.ExecuteSqlRaw("IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID(N'[DataRecords]') AND name = 'Year') BEGIN ALTER TABLE [DataRecords] ADD [Year] INT NOT NULL DEFAULT 0; END");
-            } catch { /* Ignore if already exists or other error */ }
+            // [MANUAL MIGRATION] Create Brands Table
+            context.Database.ExecuteSqlRaw(@"
+                IF OBJECT_ID(N'[Brands]', N'U') IS NULL
+                BEGIN
+                    CREATE TABLE [Brands] (
+                        [Id] int NOT NULL IDENTITY,
+                        [Name] nvarchar(max) NOT NULL,
+                        CONSTRAINT [PK_Brands] PRIMARY KEY ([Id])
+                    );
+                END
+            ");
+
+            // [MANUAL MIGRATION] Seed Brands
+            if (!context.Brands.Any())
+            {
+                var defaultBrands = new[] { "Sterilite", "Nike", "TJX", "Landmark-Splash", "Landmark-BBS", "Landmark-MAX", "Nilron", "Walmart", "H&M", "TTI", "TATA", "Inditex", "DCL", "Padini", "KMART" };
+                foreach (var b in defaultBrands) context.Brands.Add(new DataManagementApi.Models.Brand { Name = b });
+                context.SaveChanges();
+            }
+
+            // [MANUAL MIGRATION] Create Brand Tables
+            var recordTables = new[] { 
+                "SteriliteRecords", "NikeRecords", "TJXRecords", "LandmarkSplashRecords", "LandmarkBBSRecords", 
+                "LandmarkMAXRecords", "NilronRecords", "WalmartRecords", "HMRecords", "TTIRecords", 
+                "TATARecords", "InditexRecords", "DCLRecords", "PadiniRecords", "KMARTRecords" 
+            };
+
+            foreach (var table in recordTables)
+            {
+                string createTableSql = $@"
+                IF OBJECT_ID(N'[{table}]', N'U') IS NULL
+                BEGIN
+                    CREATE TABLE [{table}] (
+                        [Id] int NOT NULL IDENTITY,
+                        [Location] nvarchar(max) NULL,
+                        [Item] nvarchar(max) NULL,
+                        [Year] int NOT NULL,
+                        [Jan_ac] float NULL, [Jan_fc] float NULL, [Jan_diff] float NULL,
+                        [Feb_ac] float NULL, [Feb_fc] float NULL, [Feb_diff] float NULL,
+                        [Mar_ac] float NULL, [Mar_fc] float NULL, [Mar_diff] float NULL,
+                        [Apr_ac] float NULL, [Apr_fc] float NULL, [Apr_diff] float NULL,
+                        [May_ac] float NULL, [May_fc] float NULL, [May_diff] float NULL,
+                        [Jun_ac] float NULL, [Jun_fc] float NULL, [Jun_diff] float NULL,
+                        [Jul_ac] float NULL, [Jul_fc] float NULL, [Jul_diff] float NULL,
+                        [Aug_ac] float NULL, [Aug_fc] float NULL, [Aug_diff] float NULL,
+                        [Sep_ac] float NULL, [Sep_fc] float NULL, [Sep_diff] float NULL,
+                        [Oct_ac] float NULL, [Oct_fc] float NULL, [Oct_diff] float NULL,
+                        [Nov_ac] float NULL, [Nov_fc] float NULL, [Nov_diff] float NULL,
+                        [Dec_ac] float NULL, [Dec_fc] float NULL, [Dec_diff] float NULL,
+                        [Q1_ac] float NULL, [Q1_fc] float NULL, [Q1_diff] float NULL,
+                        [Q2_ac] float NULL, [Q2_fc] float NULL, [Q2_diff] float NULL,
+                        [Q3_ac] float NULL, [Q3_fc] float NULL, [Q3_diff] float NULL,
+                        [Q4_ac] float NULL, [Q4_fc] float NULL, [Q4_diff] float NULL,
+                        [UpdatedBy] nvarchar(max) NULL,
+                        [UpdatedAt] datetime2 NULL,
+                        CONSTRAINT [PK_{table}] PRIMARY KEY ([Id])
+                    );
+                END";
+                context.Database.ExecuteSqlRaw(createTableSql);
+            }
+
+            // 2. Kmart Daily Records Table
+             var createKmartTableSql = @"
+                IF OBJECT_ID(N'[KmartDailyRecords]', N'U') IS NULL
+                BEGIN
+                    CREATE TABLE [KmartDailyRecords] (
+                        [Id] int NOT NULL IDENTITY,
+                        [Location] nvarchar(max) NOT NULL,
+                        [Category] nvarchar(max) NOT NULL,
+                        [SubCategory] nvarchar(max) NOT NULL,
+                        [Date] datetime2 NOT NULL,
+                        [Quantity] int NOT NULL,
+                        [ModifiedBy] nvarchar(max) NULL,
+                        [UpdatedAt] datetime2 NOT NULL,
+                        CONSTRAINT [PK_KmartDailyRecords] PRIMARY KEY ([Id])
+                    );
+                END
+                ELSE
+                BEGIN
+                    IF COL_LENGTH('[KmartDailyRecords]', 'ModifiedBy') IS NULL
+                    BEGIN
+                        ALTER TABLE [KmartDailyRecords] ADD [ModifiedBy] nvarchar(max) NULL;
+                    END
+                END
+            ";
+            context.Database.ExecuteSqlRaw(createKmartTableSql);
 
             // Seed Default Admin if No Users
             if (!context.Users.Any())

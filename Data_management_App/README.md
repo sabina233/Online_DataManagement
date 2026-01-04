@@ -12,6 +12,10 @@
 - **数据管理 (Data Center)**：
     - **智能录入**：支持数据的分月份、分大区快速录入。
     - **自动冲突检测**：避免数据重复提交。
+- **Kmart 业务模块 (NEW)**：
+    - **Excel 智能导入**：支持 Kmart 格式 Excel 文件解析，自动填补合并单元格，模糊匹配 RFID 项目。
+    - **历史数据追踪**：自动记录最后修改人与修改时间。
+    - **状态持久化**：年份与月份筛选状态在录入与报表页面间自动同步。
 - **用户中心 (User Center)**：
     - **头像压缩**：客户端自动压缩高清头像，解决 Base64 过大导致的加载问题。
     - **权限控制**：基于管理员/普通用户的多层级权限设计。
@@ -33,10 +37,16 @@
 src/
 ├── assets/         # 静态资源 (图片, 全局样式)
 ├── components/     # 通用组件
+├── layouts/        # 布局组件 (AppLayout-侧边栏与头部)
+├── locales/        # (逻辑上) 语言包定义在 i18n.ts
 ├── services/       # 接口服务 (api.ts 处理认证拦截)
-├── stores/         # 状态管理 (auth-认证, data-业务数据)
-├── utils/          # 工具类 (image-图像压缩)
-└── views/          # 页面视图 (BigScreenView-指挥中心, UserCenter-个人中心)
+├── stores/         # 状态管理 (auth-认证, data-业务, kmart-Kmart状态)
+├── utils/          # 工具类 (image-图像压缩, data-数据处理)
+└── views/          # 页面视图
+    ├── BigScreenView.vue    # 指挥中心
+    ├── KmartEntryView.vue   # Kmart录入
+    ├── KmartOrderView.vue   # Kmart报表
+    └── ...
 ```
 
 ## 运行指南

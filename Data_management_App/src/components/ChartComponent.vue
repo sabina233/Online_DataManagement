@@ -3,9 +3,10 @@ import { onMounted, ref, watch, onUnmounted } from 'vue';
 import * as echarts from 'echarts';
 
 const props = defineProps<{
-    title: string;
-    xAxisData: string[];
-    seriesData: { name: string; type: 'bar' | 'line'; data: number[] }[];
+    title?: string;
+    xAxisData?: string[];
+    seriesData?: { name: string; type: 'bar' | 'line'; data: number[] }[];
+    option?: echarts.EChartsOption;
 }>();
 
 const chartRef = ref<HTMLElement | null>(null);
@@ -21,16 +22,21 @@ const initChart = () => {
 const setOptions = () => {
     if (!chartInstance) return;
 
+    if (props.option) {
+        chartInstance.setOption(props.option);
+        return;
+    }
+
     const option = {
         title: {
-            text: props.title,
+            text: props.title || '',
             left: 'center'
         },
         tooltip: {
             trigger: 'axis'
         },
         legend: {
-            data: props.seriesData.map(s => s.name),
+            data: props.seriesData?.map(s => s.name) || [],
             bottom: 0
         },
         grid: {
@@ -41,25 +47,25 @@ const setOptions = () => {
         },
         xAxis: {
             type: 'category',
-            boundaryGap: true, // true for bar
-            data: props.xAxisData
+            boundaryGap: true,
+            data: props.xAxisData || []
         },
         yAxis: {
             type: 'value'
         },
-        series: props.seriesData.map(s => ({
+        series: props.seriesData?.map(s => ({
             name: s.name,
             type: s.type,
             data: s.data,
             smooth: true,
             itemStyle: s.type === 'bar' ? { borderRadius: [4, 4, 0, 0] } : undefined
-        }))
+        })) || []
     };
 
     chartInstance.setOption(option);
 };
 
-watch(() => [props.seriesData, props.title], () => {
+watch(() => [props.seriesData, props.title, props.option], () => {
     setOptions();
 }, { deep: true });
 

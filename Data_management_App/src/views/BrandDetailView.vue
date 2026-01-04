@@ -18,6 +18,7 @@
                         <option value="All">All Years</option>
                         <option>2024</option>
                         <option>2025</option>
+                        <option>2026</option>
                     </select>
                 </div>
                 <div class="filter-item">
@@ -27,6 +28,7 @@
                         <option v-for="loc in uniqueLocations" :key="loc" :value="loc">{{ loc }}</option>
                     </select>
                 </div>
+                <!-- Month/Quarter filter for Table -->
                 <div class="filter-item">
                     <label>{{ t('brand.date_filter') }}:</label>
                     <select v-model="quarterFilter" class="input-std">
@@ -87,25 +89,33 @@
 
     <!-- Chart Section -->
     <div class="charts-grid">
+        <!-- 1. Location Difference Bar Chart -->
         <div class="card chart-card">
+            <div class="chart-header">
+                <h3>Difference by Location (AC - FC)</h3>
+                <div class="filter-item">
+                     <label>Until:</label>
+                     <select v-model="diffMonthRange" class="input-std">
+                        <option v-for="(m, idx) in monthsList" :key="m.key" :value="idx + 1">{{ m.label }}</option>
+                     </select>
+                </div>
+            </div>
             <ChartComponent 
-                :title="chartTitle" 
-                :xAxisData="chartXAxis" 
-                :seriesData="chartSeries" 
+                title="" 
+                :xAxisData="locDiffChart.xAxis" 
+                :seriesData="locDiffChart.series" 
             />
         </div>
+        
+        <!-- 2. Monthly Trend Line Chart (AC) -->
         <div class="card chart-card">
+            <div class="chart-header">
+                <h3>Monthly AC Trend</h3>
+            </div>
             <ChartComponent 
-                :title="ratioChartTitle" 
-                :xAxisData="chartXAxis" 
-                :seriesData="ratioChartSeries" 
-            />
-        </div>
-        <div class="card chart-card full-width-chart">
-            <ChartComponent 
-                :title="regionalChartTitle" 
-                :xAxisData="chartXAxis" 
-                :seriesData="regionalChartSeries" 
+                title="" 
+                :xAxisData="trendChart.xAxis" 
+                :seriesData="trendChart.series" 
             />
         </div>
     </div>
@@ -126,7 +136,7 @@ import { Download } from 'lucide-vue-next';
  */
 const route = useRoute();
 const dataStore = useDataStore();
-const { t, locale } = useI18n();
+const { t } = useI18n();
 
 // 从路由参数中提取当前品牌名称
 const currentBrand = computed(() => (route.params.name as string) || '');
@@ -135,6 +145,9 @@ const currentBrand = computed(() => (route.params.name as string) || '');
 const timeFilter = ref('All');
 const quarterFilter = ref('All');
 const locationFilter = ref('All');
+
+// Chart 1 Filter: Jan to [diffMonthRange]
+const diffMonthRange = ref(12); // Default to December (Full Year)
 
 /**
  * 获取当前品牌下的所有唯一大区列表，用于筛选下拉框
@@ -145,17 +158,13 @@ const uniqueLocations = computed(() => {
 });
 
 // 月份常量定义
+const monthsKeyList = ['jan','feb','mar','apr','may','jun','jul','aug','sep','oct','nov','dec'];
 const monthsList = [
     { key: 'jan', label: 'Jan', q: 'Q1' }, { key: 'feb', label: 'Feb', q: 'Q1' }, { key: 'mar', label: 'Mar', q: 'Q1' },
     { key: 'apr', label: 'Apr', q: 'Q2' }, { key: 'may', label: 'May', q: 'Q2' }, { key: 'jun', label: 'Jun', q: 'Q2' },
     { key: 'jul', label: 'Jul', q: 'Q3' }, { key: 'aug', label: 'Aug', q: 'Q3' }, { key: 'sep', label: 'Sep', q: 'Q3' },
     { key: 'oct', label: 'Oct', q: 'Q4' }, { key: 'nov', label: 'Nov', q: 'Q4' }, { key: 'dec', label: 'Dec', q: 'Q4' }
 ];
-
-// 动态图表标题
-const chartTitle = computed(() => {
-    return locale.value === 'zh' ? '年度数据预览' : 'Annual Data Overview';
-});
 
 /**
  * 动态计算显示的月份列（基于季度或具体月份筛选）
@@ -210,52 +219,85 @@ const filteredRecords = computed(() => {
     return recs; 
 });
 
-// 图表配置项与数据聚合逻辑
-const chartXAxis = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-const chartSeries = computed(() => {
-    const getData = (key: string) => filteredRecords.value.reduce((sum, r: any) => sum + (r[key] || 0), 0);
-    const acData = chartXAxis.map(m => getData(`${m.toLowerCase()}_ac`));
-    const fcData = chartXAxis.map(m => getData(`${m.toLowerCase()}_fc`));
-    return [
-        { name: locale.value === 'zh' ? '实际值 (AC)' : 'Actual (AC)', type: 'bar' as const, data: acData },
-        { name: locale.value === 'zh' ? '预测值 (FC)' : 'Forecast (FC)', type: 'line' as const, data: fcData }
-    ];
-});
+/**
+ * Chart 1: Location AC vs FC Grouped Bar Chart
+ */
+const locDiffChart = computed(() => {
+    // X Axis: Locations
+    const locs = uniqueLocations.value;
+    
+    // Calculate Sum(AC) and Sum(FC) for each location up to diffMonthRange
+    const acData: number[] = [];
+    const fcData: number[] = [];
 
-const ratioChartTitle = computed(() => {
-    return locale.value === 'zh' ? '月度达成率 (%)' : 'Monthly Achievement Rate (%)';
-});
+    locs.forEach(loc => {
+        const locRecords = filteredRecords.value.filter(r => r.location === loc);
+        let sumAc = 0;
+        let sumFc = 0;
+        
+        locRecords.forEach((r: any) => {
+            for (let i = 0; i < diffMonthRange.value; i++) {
+                const mKey = monthsKeyList[i];
+                sumAc += (r[`${mKey}_ac`] || 0);
+                sumFc += (r[`${mKey}_fc`] || 0);
+            }
+        });
+        acData.push(sumAc);
+        fcData.push(sumFc);
+    });
 
-const ratioChartSeries = computed(() => {
-    const getData = (mKey: string) => {
-        const totalAc = filteredRecords.value.reduce((sum, r: any) => sum + (r[`${mKey}_ac`] || 0), 0);
-        const totalFc = filteredRecords.value.reduce((sum, r: any) => sum + (r[`${mKey}_fc`] || 0), 0);
-        if (totalFc === 0) return 0;
-        return Number(((totalAc / totalFc) * 100).toFixed(2));
+    return {
+        xAxis: locs,
+        series: [
+            { 
+                name: 'AC (Jan~' + (monthsList[diffMonthRange.value - 1]?.label || '') + ')', 
+                type: 'bar' as const, 
+                data: acData,
+                itemStyle: { color: '#3b82f6' } // Blue
+            },
+            { 
+                name: 'FC (Jan~' + (monthsList[diffMonthRange.value - 1]?.label || '') + ')', 
+                type: 'bar' as const, 
+                data: fcData,
+                itemStyle: { color: '#eab308' } // Yellow
+            }
+        ]
     };
-    const ratioData = chartXAxis.map(m => getData(m.toLowerCase()));
-    return [
-        { name: '达成率 (%)', type: 'line' as const, data: ratioData, smooth: true }
-    ];
 });
 
-const regionalChartTitle = computed(() => {
-    const loc = locationFilter.value === 'All' ? (locale.value === 'zh' ? '全地区' : 'All Regions') : locationFilter.value;
-    return locale.value === 'zh' ? `${loc} 趋势对比` : `${loc} Trend Comparison`;
-});
+/**
+ * Chart 2: Monthly AC Trend by Location (Multi-Line)
+ */
+const trendChart = computed(() => {
+    // X Axis: Jan - Dec
+    const xAxis = monthsKeyList.map(m => m.charAt(0).toUpperCase() + m.slice(1));
+    const locs = uniqueLocations.value;
+    
+    // Create a series for EACH location
+    // Colors for different lines
+    const colors = ['#3b82f6', '#ef4444', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899', '#6366f1', '#14b8a6'];
+    
+    const series = locs.map((loc, idx) => {
+        // For this location, calculate total AC for each month
+        const locRecords = filteredRecords.value.filter(r => r.location === loc);
+        
+        const data = monthsKeyList.map(mKey => {
+            return locRecords.reduce((sum, r: any) => sum + (r[`${mKey}_ac`] || 0), 0);
+        });
 
-const regionalChartSeries = computed(() => {
-    const acData = chartXAxis.map(m => {
-        return filteredRecords.value.reduce((sum, r: any) => sum + (r[`${m.toLowerCase()}_ac`] || 0), 0);
-    });
-    const fcData = chartXAxis.map(m => {
-        return filteredRecords.value.reduce((sum, r: any) => sum + (r[`${m.toLowerCase()}_fc`] || 0), 0);
+        return {
+            name: loc,
+            type: 'line' as const,
+            data: data,
+            smooth: true,
+            itemStyle: { color: colors[idx % colors.length] }
+        };
     });
 
-    return [
-        { name: locale.value === 'zh' ? '实际值' : 'Actual', type: 'line' as const, data: acData, smooth: true },
-        { name: locale.value === 'zh' ? '预测值' : 'Forecast', type: 'line' as const, data: fcData, smooth: true, lineStyle: { type: 'dashed' } }
-    ];
+    return {
+        xAxis: xAxis,
+        series: series
+    };
 });
 
 // 分页逻辑
@@ -308,9 +350,7 @@ const formatNum = (n: number) => n?.toLocaleString() || '0';
     display: flex; align-items: center; justify-content: space-between;
     flex-wrap: wrap; gap: 16px;
 }
-.section-toolbar h3 { font-size: 1rem; font-weight: 600; color: var(--text-main); margin: 0; }
 .filter-group { display: flex; gap: 12px; align-items: center; }
-.filter-label { font-size: 0.9rem; color: var(--text-secondary); }
 .input-std { padding: 4px 8px; border: 1px solid var(--border-light); border-radius: 4px; font-size: 0.9rem; }
 
 .table-container { padding: 0; overflow: hidden; margin-top: 12px; }
@@ -338,10 +378,7 @@ th.sticky-col { z-index: 50; background-color: #f8fafc; }
 
 /* Highlights */
 .q-header { background-color: #e0f2fe; color: #0369a1; }
-.year-header { background-color: #f0fdf4; color: #15803d; }
 .bg-q { background-color: #f0f9ff; font-weight: 500; }
-.bg-year { background-color: #fcfdfc; font-weight: 600; border-left: 2px solid #86efac; }
-
 .text-danger { color: #ef4444; }
 .text-success { color: #10b981; }
 
@@ -353,10 +390,13 @@ th.sticky-col { z-index: 50; background-color: #f8fafc; }
 .page-info { font-size: 0.9rem; color: var(--text-secondary); }
 
 .charts-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-top: 24px; }
-.full-width-chart { grid-column: span 2; }
+.chart-card { padding: 16px; }
+.chart-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+.chart-header h3 { font-size: 1rem; margin: 0; color: var(--text-main); }
+.chart-header .filter-item { display: flex; align-items: center; gap: 8px; font-size: 0.9rem; }
+
 @media (max-width: 1024px) {
     .charts-grid { grid-template-columns: 1fr; }
-    .full-width-chart { grid-column: span 1; }
 }
 
 .empty-state { text-align: center; padding: 48px; color: var(--text-light); }

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from 'vue';
+import { ref, onMounted } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
 import { useAuthStore } from '../stores/auth';
 import { useDataStore } from '../stores/data';
@@ -14,7 +14,8 @@ import {
   PlusCircle,
   Globe,
   Users,
-  BarChart3
+  BarChart3,
+  ShoppingCart
 } from 'lucide-vue-next';
 
 /**
@@ -28,12 +29,14 @@ const { t, locale } = useI18n();
 
 // 侧边栏及用户菜单状态
 const isBrandMenuOpen = ref(true);
+const isKmartMenuOpen = ref(true); // Default open for Kmart
 const isUserMenuOpen = ref(false);
 
 /**
  * 菜单切换逻辑
  */
 const toggleBrandMenu = () => isBrandMenuOpen.value = !isBrandMenuOpen.value;
+const toggleKmartMenu = () => isKmartMenuOpen.value = !isKmartMenuOpen.value;
 const toggleUserMenu = () => isUserMenuOpen.value = !isUserMenuOpen.value;
 
 /**
@@ -57,6 +60,10 @@ const logout = () => {
 const navigateToBrand = (brand: string) => {
   router.push({ name: 'brand-detail', params: { name: brand } });
 };
+
+onMounted(() => {
+    dataStore.fetchBrands();
+});
 </script>
 
 <template>
@@ -64,24 +71,38 @@ const navigateToBrand = (brand: string) => {
     <!-- Sidebar -->
     <aside class="sidebar">
       <div class="logo-area">
-        <h1>DataMgt</h1>
+        <h1>{{ t('app.title') }}</h1>
       </div>
       
       <nav class="nav-links">
         <!-- Home -->
         <RouterLink to="/" class="nav-item" :class="{ active: route.name === 'home' }">
-          <LayoutDashboard :size="20" />
-          <span>{{ t('layout.dashboard') }}</span>
+          <div class="flex-row">
+            <LayoutDashboard :size="20" />
+            <span>{{ t('layout.dashboard') }}</span>
+          </div>
         </RouterLink>
 
         <!-- Big Screen -->
         <RouterLink to="/big-screen" class="nav-item" :class="{ active: route.name === 'big-screen' }">
-          <BarChart3 :size="20" />
-          <span>{{ t('layout.big_screen') }}</span>
+          <div class="flex-row">
+            <BarChart3 :size="20" />
+            <span>{{ t('layout.big_screen') }}</span>
+          </div>
         </RouterLink>
 
-        <!-- Brands -->
+        <!-- Group 1: Brand Stock Data -->
+        <div class="nav-group-label">{{ t('layout.stock_group') }}</div>
         <div class="nav-group">
+          <!-- Stock Entry -->
+          <RouterLink to="/entry" class="nav-item" :class="{ active: route.name === 'data-entry' }">
+              <div class="flex-row">
+                  <PlusCircle :size="20" />
+                  <span>{{ t('layout.entry') }}</span>
+              </div>
+          </RouterLink>
+
+          <!-- Brand List -->
           <div class="nav-item group-header" @click="toggleBrandMenu">
             <div class="flex-row">
               <Database :size="20" />
@@ -103,11 +124,30 @@ const navigateToBrand = (brand: string) => {
           </div>
         </div>
 
-        <!-- Entry -->
-        <RouterLink to="/entry" class="nav-item" :class="{ active: route.name === 'data-entry' }">
-            <PlusCircle :size="20" />
-            <span>{{ t('layout.entry') }}</span>
-        </RouterLink>
+        <!-- Group 2: Site Order Data -->
+        <div class="nav-group-label" style="margin-top: 16px;">{{ t('layout.order_group') }}</div>
+        <div class="nav-group">
+            <!-- Kmart Group -->
+            <div class="nav-item group-header" @click="toggleKmartMenu">
+                <div class="flex-row">
+                    <ShoppingCart :size="20" />
+                    <span>{{ t('layout.kmart') }}</span>
+                </div>
+                <component :is="isKmartMenuOpen ? ChevronDown : ChevronRight" :size="16" />
+            </div>
+
+            <div v-if="isKmartMenuOpen" class="sub-nav">
+                <!-- Kmart Entry -->
+                <RouterLink to="/orders/kmart/entry" class="sub-nav-item" :class="{ active: route.path === '/orders/kmart/entry' }">
+                    <span>{{ t('layout.kmart_entry') }}</span>
+                </RouterLink>
+                
+                <!-- Kmart Report -->
+                <RouterLink to="/orders/kmart" class="sub-nav-item" :class="{ active: route.path === '/orders/kmart' }">
+                    <span>{{ t('layout.kmart_report') }}</span>
+                </RouterLink>
+            </div>
+        </div>
 
         <!-- Admin: User Management -->
         <RouterLink 
@@ -116,8 +156,10 @@ const navigateToBrand = (brand: string) => {
             class="nav-item" 
             :class="{ active: route.name === 'user-management' }"
         >
-            <Users :size="20" /> <!-- Need to import Users icon -->
-            <span>User Management</span>
+            <div class="flex-row">
+                <Users :size="20" />
+                <span>{{ t('layout.user_management') }}</span>
+            </div>
         </RouterLink>
       </nav>
     </aside>
@@ -127,8 +169,8 @@ const navigateToBrand = (brand: string) => {
       <!-- Header -->
       <header class="top-header">
         <div class="header-left">
-           <!-- Dynamic Title based on route translation logic could be complex, simplifying -->
-           <h2>{{ route.name === 'brand-detail' ? route.params.name : (route.name === 'home' ? t('layout.dashboard') : t('layout.entry')) }}</h2>
+           <!-- Dynamic Title based on route meta or params -->
+           <h2>{{ route.meta.title ? (t(route.meta.title as string) !== (route.meta.title as string) ? t(route.meta.title as string) : route.meta.title) : (route.name === 'brand-detail' ? route.params.name : (route.name === 'home' ? t('layout.dashboard') : t('layout.entry'))) }}</h2>
         </div>
         
         <div class="header-right">
@@ -205,7 +247,16 @@ const navigateToBrand = (brand: string) => {
   background: linear-gradient(135deg, var(--primary-600), var(--primary-800));
   -webkit-background-clip: text;
   background-clip: text;
-  -webkit-text-fill-color: transparent;
+}
+
+.nav-group-label {
+    padding: 0 16px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--text-light);
+    text-transform: uppercase;
+    margin-bottom: 8px;
+    letter-spacing: 0.05em;
 }
 
 .nav-links {
@@ -256,6 +307,7 @@ const navigateToBrand = (brand: string) => {
 }
 
 .sub-nav-item {
+  display: block; /* Force vertical stacking */
   padding: 8px 16px;
   font-size: 0.9rem;
   color: var(--text-secondary);
@@ -263,6 +315,7 @@ const navigateToBrand = (brand: string) => {
   border-radius: 6px;
   margin-bottom: 2px;
   transition: color 0.2s;
+  text-decoration: none; /* For RouterLink */
 }
 
 .sub-nav-item:hover {
