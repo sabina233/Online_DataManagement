@@ -20,9 +20,15 @@ namespace DataManagementApi.Controllers
         [HttpGet("kmart")]
         public async Task<ActionResult<IEnumerable<KmartDailyRecord>>> GetKmartRecords([FromQuery] int year, [FromQuery] int? month, [FromQuery] int? endMonth)
         {
+
             var query = _context.KmartDailyRecords.Where(r => r.Date.Year == year);
 
-            if (endMonth.HasValue)
+            if (month.HasValue && endMonth.HasValue)
+            {
+                // Range: month to endMonth
+                query = query.Where(r => r.Date.Month >= month.Value && r.Date.Month <= endMonth.Value);
+            }
+            else if (endMonth.HasValue)
             {
                 // Year-to-date range: 1 to endMonth
                 query = query.Where(r => r.Date.Month >= 1 && r.Date.Month <= endMonth.Value);
@@ -56,7 +62,7 @@ namespace DataManagementApi.Controllers
 
                 // Uniqueness check: Location + Category + SubCategory + Date
                 var existing = await _context.KmartDailyRecords
-                    .FirstOrDefaultAsync(r => 
+                    .FirstOrDefaultAsync(r =>
                         r.Location == record.Location &&
                         r.Category == record.Category &&
                         (r.SubCategory ?? "") == (record.SubCategory ?? "") &&
@@ -70,7 +76,7 @@ namespace DataManagementApi.Controllers
                 }
                 else
                 {
-                    record.Date = normalizedDate; 
+                    record.Date = normalizedDate;
                     record.ModifiedBy = username;
                     record.UpdatedAt = DateTime.Now;
                     _context.KmartDailyRecords.Add(record);
@@ -79,6 +85,25 @@ namespace DataManagementApi.Controllers
 
             await _context.SaveChangesAsync();
             return Ok(new { message = "Records saved successfully" });
+        }
+        // DELETE: api/Order/kmart?year=2025&month=11
+        [HttpDelete("kmart")]
+        [Microsoft.AspNetCore.Authorization.Authorize]
+        public async Task<ActionResult> DeleteKmartRecords([FromQuery] int year, [FromQuery] int month)
+        {
+            var records = await _context.KmartDailyRecords
+                .Where(r => r.Date.Year == year && r.Date.Month == month)
+                .ToListAsync();
+
+            if (!records.Any())
+            {
+                return NotFound("No records found for the specified period.");
+            }
+
+            _context.KmartDailyRecords.RemoveRange(records);
+            await _context.SaveChangesAsync();
+
+            return Ok(new { message = $"Successfully deleted {records.Count} records." });
         }
     }
 }

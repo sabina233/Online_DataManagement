@@ -21,7 +21,7 @@
                 <select v-model="selectedMonth" class="input-std" @change="loadData">
                     <option v-for="m in 12" :key="m" :value="m">{{ m }}月</option>
                 </select>
-                <span class="info">统计截至 {{ selectedMonth }} 月底</span>
+                <span class="info">当前显示: {{ selectedMonth }} 月数据</span>
             </div>
             
             <div class="actions">
@@ -32,10 +32,10 @@
         </div>
     </div>
 
-    <!-- 模块 1: 总接单汇总 -->
+    <!-- 模块 1: 当月接单汇总 -->
     <div class="summary-section">
         <div class="section-header">
-            <h3>1. 总的各种类接单汇总 (Total Orders by Category)</h3>
+            <h3>1. 当月各种类接单汇总 (Total Orders by Category - {{ selectedMonth }}月)</h3>
         </div>
         <div class="summary-grid">
             <div class="card table-card">
@@ -43,7 +43,7 @@
                     <thead>
                         <tr>
                             <th>类别</th>
-                            <th>总数量 (Pcs)</th>
+                            <th>当月数量 (Pcs)</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -60,28 +60,47 @@
         </div>
     </div>
 
-    <!-- 模块 2: 种类站点占比 -->
+    <!-- 模块 2: 种类站点占比 (改为 站点接单总量占比) -->
     <div class="summary-section">
-        <div class="section-header">
-            <h3>2. 各种类占对应站点的比重 (Category Weight by Site)</h3>
+        <div class="section-header" style="display: flex; justify-content: space-between; align-items: center;">
+            <h3>2. 站点接单量统计与占比 (Total Orders by Site)</h3>
+            
+            <!-- 模块 2 独立过滤器 -->
+            <div class="module-filter">
+                <select v-model="module2FilterType" class="input-std input-sm w-auto">
+                    <option value="annual">年度</option>
+                    <option value="half">半年度</option>
+                    <option value="quarter">季度</option>
+                </select>
+                
+                <select v-if="module2FilterType !== 'annual'" v-model="module2FilterValue" class="input-std input-sm">
+                    <option v-for="opt in module2FilterOptions" :key="opt.value" :value="opt.value">
+                        {{ opt.label }}
+                    </option>
+                </select>
+            </div>
         </div>
         <div class="summary-grid">
             <div class="card table-card">
                 <table class="nested-table">
                     <thead>
                         <tr>
-                            <th>地点</th>
-                            <th>RFID</th>
-                            <th>其他</th>
-                            <th>合计</th>
+                            <th>站点</th>
+                            <th>总量 (Pcs)</th>
+                            <th>占总比%</th>
                         </tr>
                     </thead>
                     <tbody>
                         <tr v-for="loc in siteWeightData" :key="loc.location">
                             <td>{{ loc.location }}</td>
-                            <td>{{ loc.rfidPercent }}%</td>
-                            <td>{{ loc.otherPercent }}%</td>
-                            <td class="font-bold">{{ loc.total.toLocaleString() }}</td>
+                            <td>{{ loc.total.toLocaleString() }}</td>
+                            <td>{{ loc.mainPercent }}%</td>
+                        </tr>
+                         <!-- Total Row -->
+                        <tr style="background: #f8fafc; font-weight: bold;">
+                            <td>TOTAL</td>
+                            <td>{{ siteWeightData.reduce((s, i) => s + i.total, 0).toLocaleString() }}</td>
+                            <td>100%</td>
                         </tr>
                     </tbody>
                 </table>
@@ -225,11 +244,69 @@ const normalizeMatch = (s: any): string => {
 
 // --- 计算汇总数据 ---
 
+
+// --- 模块 2 筛选状态 ---
+const module2FilterType = ref<'annual' | 'half' | 'quarter'>('annual');
+const module2FilterValue = ref<string>('all');
+
+const module2FilterOptions = computed(() => {
+    switch (module2FilterType.value) {
+        case 'annual': return [{ label: '全年', value: 'all' }];
+        case 'half': return [{ label: '上半年', value: 'H1' }, { label: '下半年', value: 'H2' }];
+        case 'quarter': return [
+            { label: '第一季度', value: 'Q1' },
+            { label: '第二季度', value: 'Q2' },
+            { label: '第三季度', value: 'Q3' },
+            { label: '第四季度', value: 'Q4' }
+        ];
+        default: return [];
+    }
+});
+
+// 重置筛选值
+watch(module2FilterType, () => {
+    module2FilterValue.value = module2FilterOptions.value[0]?.value || 'all';
+});
+
+// --- 数据处理 ---
+
+// 1. 全局筛选：仅受年份控制（API已经筛选了年份），但在此需提供给 Module 2 全年数据
+// loadData 现在会加载整年数据（endMonth: 12）
+
+// 2. 当月数据：用于 模块 1, 3 (受全局月份选择影响，严格显示当月)
+const currentMonthData = computed(() => {
+    return allData.value.filter(d => {
+        const dt = new Date(d.date);
+        return dt.getMonth() + 1 === selectedMonth.value;
+    });
+});
+
+// 3. 模块 2 数据：受 Module 2 自身过滤器影响 (保持不变)
+const filteredModule2Data = computed(() => {
+    return allData.value.filter(d => {
+        const dt = new Date(d.date);
+        const month = dt.getMonth() + 1;
+
+        if (module2FilterType.value === 'annual') return true;
+        if (module2FilterType.value === 'half') {
+            return module2FilterValue.value === 'H1' ? month <= 6 : month > 6;
+        }
+        if (module2FilterType.value === 'quarter') {
+            if (module2FilterValue.value === 'Q1') return month >= 1 && month <= 3;
+            if (module2FilterValue.value === 'Q2') return month >= 4 && month <= 6;
+            if (module2FilterValue.value === 'Q3') return month >= 7 && month <= 9;
+            if (module2FilterValue.value === 'Q4') return month >= 10 && month <= 12;
+        }
+        return true;
+    });
+});
+
+// --- 计算汇总数据 ---
+
 const totalByCategory = computed(() => {
     const map = new Map<string, number>();
-    allData.value.forEach(d => {
-        // 汇总时进行类别名称归一化（防止导入时的微差）
-        // 如果是 RFID 相关则统一归为 RFID
+    // 使用 currentMonthData
+    currentMonthData.value.forEach(d => {
         const isRFID = normalizeMatch(d.category) === "RFID";
         const catName = isRFID ? "RFID" : d.category;
         map.set(catName, (map.get(catName) || 0) + d.quantity);
@@ -237,27 +314,37 @@ const totalByCategory = computed(() => {
     return Array.from(map.entries()).map(([name, total]) => ({ name, total }));
 });
 
+// OLD Module 2 Logic (replaced) - keeping name for ref but rewriting content
+// New Module 2: Site Proportion
 const siteWeightData = computed(() => {
+    // 使用 filteredModule2Data
+    const totalAll = filteredModule2Data.value.reduce((s, r) => s + r.quantity, 0);
+    
     return schemaData.map(loc => {
-        const locData = allData.value.filter(d => normalizeMatch(d.location) === normalizeMatch(loc.location));
+        const locData = filteredModule2Data.value.filter(d => normalizeMatch(d.location) === normalizeMatch(loc.location));
         const total = locData.reduce((s, r) => s + r.quantity, 0);
-        const rfidTotal = locData.filter(d => normalizeMatch(d.category) === 'RFID').reduce((s, r) => s + r.quantity, 0);
-        const otherTotal = total - rfidTotal;
+        
         return {
             location: loc.location,
             total,
-            rfidPercent: total > 0 ? Math.round((rfidTotal / total) * 100) : 0,
-            otherPercent: total > 0 ? Math.round((otherTotal / total) * 100) : 0
+            mainPercent: totalAll > 0 ? ((total / totalAll) * 100).toFixed(2) : "0" // Changed for display
         };
     });
 });
 
 const rfidRatioData = computed(() => {
-    return siteWeightData.value.map(s => ({
-        location: s.location,
-        rfidTotal: Math.round(s.total * s.rfidPercent / 100),
-        ratio: s.rfidPercent
-    }));
+    // 使用 currentMonthData
+    // Need to re-calculate based on currentMonthData for Module 3
+    return schemaData.map(loc => {
+        const locData = currentMonthData.value.filter(d => normalizeMatch(d.location) === normalizeMatch(loc.location));
+        const total = locData.reduce((s, r) => s + r.quantity, 0);
+        const rfidTotal = locData.filter(d => normalizeMatch(d.category) === 'RFID').reduce((s, r) => s + r.quantity, 0);
+        return {
+            location: loc.location,
+            rfidTotal,
+            ratio: total > 0 ? Math.round((rfidTotal / total) * 100) : 0
+        };
+    });
 });
 
 // --- 图表配置 ---
@@ -275,20 +362,24 @@ const totalCategoryChartOption = computed(() => ({
     }]
 }));
 
+// Module 2 Chart
 const siteWeightChartOption = computed(() => ({
-    title: { text: '各站点 RFID vs 其他占比', left: 'center' },
+    title: { text: '各站点接单量统计', left: 'center' },
     tooltip: { trigger: 'axis' as const, axisPointer: { type: 'shadow' as const } },
-    legend: { data: ['RFID', '其他'], bottom: 0 },
-    xAxis: { type: 'category' as const, data: schemaData.map(l => l.location) },
-    yAxis: { type: 'value' as const, max: 100 },
+    xAxis: { type: 'category' as const, data: siteWeightData.value.map(l => l.location) },
+    yAxis: { type: 'value' as const },
     series: [
-        { name: 'RFID', type: 'bar' as const, stack: 'total', data: siteWeightData.value.map(s => s.rfidPercent) },
-        { name: '其他', type: 'bar' as const, stack: 'total', data: siteWeightData.value.map(s => s.otherPercent) }
+        { 
+            name: '总量', 
+            type: 'bar' as const, 
+            data: siteWeightData.value.map(s => s.total),
+            label: { show: true, position: 'top' as const } 
+        }
     ]
 }));
 
 const rfidRatioChartOption = computed(() => ({
-    title: { text: '各站点 RFID 占比趋势', left: 'center' },
+    title: { text: '各站点 RFID 占比', left: 'center' },
     xAxis: { type: 'category' as const, data: rfidRatioData.value.map(r => r.location) },
     yAxis: { type: 'value' as const },
     series: [{
@@ -303,7 +394,8 @@ const rfidRatioChartOption = computed(() => ({
 const daysInMonth = computed(() => new Date(selectedYear.value, selectedMonth.value, 0).getDate());
 
 const calculateRowTotal = (row: any) => {
-    const locRows = allData.value.filter(d => 
+    // 使用 currentMonthData
+    const locRows = currentMonthData.value.filter(d => 
         normalizeMatch(d.location) === normalizeMatch(row.location) && 
         normalizeMatch(d.category) === normalizeMatch(row.category) && 
         normalizeMatch(d.subCategory) === normalizeMatch(row.subCategory)
@@ -317,14 +409,15 @@ const groupedData = computed(() => {
             category: g.name,
             items: g.items.map(item => {
                 const dailyValues: Record<number, number> = {};
-                // 根据标准化后的三元组过滤数据
-                allData.value.filter(d => 
+                // 使用 currentMonthData
+                currentMonthData.value.filter(d => 
                     normalizeMatch(d.location) === normalizeMatch(loc.location) && 
                     normalizeMatch(d.category) === normalizeMatch(g.name) && 
                     normalizeMatch(d.subCategory) === normalizeMatch(item)
                 ).forEach(d => {
                     const dt = new Date(d.date);
-                    // 确保是当前选中的年月
+                    // 确保是当前选中的年月 (API返回全年数据，这里currentMonthData 已经是 <= selectedMonth)
+                    // 但是矩阵表只显示单月明细，所以实际上应该只过滤出 == selectedMonth的数据
                     if (dt.getFullYear() === selectedYear.value && dt.getMonth() + 1 === selectedMonth.value) {
                        dailyValues[dt.getDate()] = d.quantity;
                     }
@@ -348,8 +441,9 @@ const groupedData = computed(() => {
 
 const loadData = async () => {
     try {
+        // ALWAYS fetch full year to support Module 2 filters
         const res = await api.get<ApiRecord[]>('/Order/kmart', {
-            params: { year: selectedYear.value, endMonth: selectedMonth.value }
+            params: { year: selectedYear.value, endMonth: 12 }
         });
         allData.value = res.data;
     } catch (e) {
@@ -357,10 +451,6 @@ const loadData = async () => {
     }
 };
 
-// import { watch } from 'vue'; // Removed duplicate
-// Watch is already set up in the top script block is ideal, but let's see. 
-// The previous code had `watch` at the bottom.
-// I will just remove the import line if it exists separately.
 watch([selectedYear, selectedMonth], () => {
     loadData();
 });
@@ -376,7 +466,11 @@ onMounted(() => {
 .toolbar-card { flex: 0 0 auto; }
 .toolbar { padding: 12px 16px; display: flex; justify-content: space-between; align-items: center; }
 .filter-group { display: flex; gap: 12px; align-items: center; }
+.module-filter { display: flex; gap: 8px; }
 .input-std { padding: 6px 12px; border: 1px solid #e2e8f0; border-radius: 4px; }
+.input-sm { padding: 4px 8px; font-size: 0.85rem; }
+/* 自适应下拉列表宽度（随内容/父容器自适应） */
+.w-auto { width: auto; }
 .info { color: #64748b; font-size: 0.85rem; }
 
 .summary-section { display: flex; flex-direction: column; gap: 12px; }

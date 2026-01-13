@@ -11,6 +11,7 @@
 - [x] 重构 KmartOrderView 报表页 (15:35)
 - [x] 合并 Category 与 Item 表头，对齐 Excel 格式 (15:50)
 - [x] 修复所有 TypeScript 类型错误 (15:50)
+- [x] 优化 KmartOrderView 模块 2：增加年度/季度/半年筛选，调整为站点总量占比统计 (2026-01-12)
 
 ## 系统增强与汉化 (2026-01-04)
 - [x] 后端集成 JWT 认证，保护 API 接口安全

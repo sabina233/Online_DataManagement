@@ -28,6 +28,9 @@
                 </div>
                 
                 <div class="actions">
+                    <button class="btn btn-danger btn-sm" @click="deleteData">
+                        删除当月数据
+                    </button>
                     <!-- Excel 上传 -->
                     <div class="upload-btn-wrapper">
                         <button class="btn btn-secondary btn-sm">导入 Excel</button>
@@ -100,11 +103,13 @@
 
 <script setup lang="ts">
 import { ref, computed, reactive, onMounted, watch } from 'vue';
-import { useRoute } from 'vue-router';
-import * as XLSX from 'xlsx';
 import api from '../services/api';
 import { useKmartStore } from '../stores/kmart';
 import { storeToRefs } from 'pinia';
+
+// Add confirm dialog (browser native or custom) - for now using native confirm
+// The user asked for "Refresh persistence", which is handled by store update.
+// The user asked for "Delete Month" button.
 
 const kmartStore = useKmartStore();
 const { selectedYear, selectedMonth } = storeToRefs(kmartStore);
@@ -127,8 +132,6 @@ const availableYears = computed(() => {
 watch([selectedYear, selectedMonth], () => {
     loadData();
 });
-
-const fileInput = ref<HTMLInputElement | null>(null);
 
 // 根据用户反馈定义的业务 Schema
 const schemaData = [
@@ -249,6 +252,7 @@ const normalizeMatch = (s: any): string => {
 // --- API 接口 ---
 
 // 加载现有数据
+// 加载现有数据
 const loadData = async () => {
     try {
         isLoading.value = true;
@@ -260,7 +264,40 @@ const loadData = async () => {
         
         res.data.forEach(rec => {
             const day = new Date(rec.date).getDate();
-            const key = getCellKey(rec.location, rec.category, rec.subCategory || "", day);
+            
+            // 尝试将 API 返回的字符串与 Schema 中的标准字符串匹配
+            // 解决前后端/导入导出过程中的空格、全角半角等格式不一致导致不显示的问题
+            let loc = rec.location;
+            let cat = rec.category;
+            let sub = rec.subCategory || "";
+
+            // 1. 匹配 Location
+            const locSchema = schemaData.find(s => normalizeMatch(s.location) === normalizeMatch(loc));
+            if (locSchema) {
+                loc = locSchema.location;
+                
+                // 2. 匹配 Category
+                // 注意：API 返回的 category 可能就是 "RFID"（如果 Excel 导入时就是这样），也可能是 "RFID" 下的子项？
+                // 根据 saveData 逻辑，category 应该是 schema 中的 group.name
+                const groupSchema = locSchema.groups.find(g => normalizeMatch(g.name) === normalizeMatch(cat));
+                if (groupSchema) {
+                    cat = groupSchema.name;
+                    
+                    // 3. 匹配 SubCategory (仅针对 RFID)
+                    if (normalizeMatch(cat) === "RFID") {
+                        const itemSchema = groupSchema.items.find(i => normalizeMatch(i) === normalizeMatch(sub));
+                        if(itemSchema) {
+                            sub = itemSchema;
+                        }
+                    } else {
+                        // 非 RFID 项目，subCategory 为空或 schema item (schema item is "" for others usually)
+                        // 但我们的 key 生成依赖 item === "" for non-RFID
+                        sub = ""; 
+                    }
+                }
+            }
+
+            const key = getCellKey(loc, cat, sub, day);
             dataMap.set(key, rec.quantity);
             initialDataMap.set(key, rec.quantity);
         });
@@ -314,6 +351,37 @@ const saveData = async () => {
         alert(`成功保存 ${changeCount} 条变更数据！`);
     } catch (e) {
         alert('保存失败');
+    }
+};
+
+// 删除当月数据
+const deleteData = async () => {
+    if (!confirm(`确定要删除 ${selectedYear.value}年 ${selectedMonth.value}月 的所有数据吗？此操作不可恢复！`)) {
+        return;
+    }
+
+    try {
+        isLoading.value = true;
+        await api.delete('/Order/kmart', {
+            params: { year: selectedYear.value, month: selectedMonth.value }
+        });
+        
+        // Clear local Data
+        dataMap.clear();
+        initialDataMap.clear();
+        
+        alert('删除成功');
+        // Reload (which will be empty mostly, but confirming state)
+        await loadData();
+    } catch (e: any) {
+        console.error("删除失败", e);
+        if (e.response && e.response.status === 404) {
+            alert('当前月份没有数据可删除。');
+        } else {
+            alert('删除操作失败，请重试。');
+        }
+    } finally {
+        isLoading.value = false;
     }
 };
 
@@ -478,4 +546,7 @@ th.fixed-col { z-index: 40; background: #f1f5f9; }
 .day-cell { padding: 0; min-width: 100px; }
 .cell-input { width: 100%; height: 100%; border: none; text-align: center; outline: none; background: transparent; }
 .cell-input:focus { background: #e0f2fe; }
+
+.btn-danger { background-color: #ef4444; color: white; border: 1px solid #dc2626; }
+.btn-danger:hover { background-color: #dc2626; }
 </style>

@@ -46,7 +46,7 @@ const { t } = useI18n();
 
 .welcome-banner {
     background: linear-gradient(120deg, var(--primary-600), var(--primary-800));
-    color: white;
+    color: rgb(233, 19, 55);
     margin-bottom: 32px;
 }
 

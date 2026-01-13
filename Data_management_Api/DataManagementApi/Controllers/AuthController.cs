@@ -32,7 +32,7 @@ namespace DataManagementApi.Controllers
                 return BadRequest("用户名和密码不能为空");
 
             var user = await _context.Users.FirstOrDefaultAsync(u => u.Username == request.Username);
-            
+
             if (user == null)
             {
                 return Unauthorized(new { message = "用户不存在" });
@@ -47,12 +47,13 @@ namespace DataManagementApi.Controllers
             // 生成 JWT Token
             var token = GenerateJwtToken(user);
 
-            return Ok(new { 
+            return Ok(new
+            {
                 user = user,
-                token = token 
+                token = token
             });
         }
-    
+
         /// <summary>
         /// 修改密码
         /// </summary>
@@ -108,8 +109,8 @@ namespace DataManagementApi.Controllers
     /// </summary>
     public class LoginRequest
     {
-        public required string Username { get; set; }
-        public required string Password { get; set; }
+        public string Username { get; set; } = string.Empty;
+        public string Password { get; set; } = string.Empty;
     }
 
     /// <summary>
@@ -120,5 +121,5 @@ namespace DataManagementApi.Controllers
         public required string Username { get; set; }
         public required string OldPassword { get; set; }
         public required string NewPassword { get; set; }
-     }
- }
+    }
+}

@@ -1,14 +1,27 @@
 import { defineStore } from 'pinia';
-import { ref } from 'vue';
+import { ref, watch } from 'vue';
 
 export const useKmartStore = defineStore('kmart', () => {
     const currentYear = new Date().getFullYear();
+    const currentMonth = new Date().getMonth() + 1;
 
-    // State with default values
-    const selectedYear = ref(currentYear);
-    const selectedMonth = ref(new Date().getMonth() + 1); // Default to current month
+    // Load from localStorage or use default
+    const savedYear = localStorage.getItem('kmart_year');
+    const savedMonth = localStorage.getItem('kmart_month');
 
-    // Actions (can be simple setters or direct ref modification)
+    const selectedYear = ref(savedYear ? parseInt(savedYear) : currentYear);
+    const selectedMonth = ref(savedMonth ? parseInt(savedMonth) : currentMonth);
+
+    // Watchers for persistence
+    watch(selectedYear, (newVal: number) => {
+        localStorage.setItem('kmart_year', newVal.toString());
+    });
+
+    watch(selectedMonth, (newVal: number) => {
+        localStorage.setItem('kmart_month', newVal.toString());
+    });
+
+    // Actions
     function setYear(year: number) {
         selectedYear.value = year;
     }
