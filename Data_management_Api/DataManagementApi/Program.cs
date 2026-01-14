@@ -31,12 +31,13 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     });
 
 // 注册 CORS
+var allowedOrigins = builder.Configuration.GetSection("AllowedOrigins").Get<string[]>() ?? Array.Empty<string>();
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowFrontend",
         policy =>
         {
-            policy.WithOrigins("http://localhost:5173") // 前端地址
+            policy.WithOrigins(allowedOrigins) // 从配置文件读取
                   .AllowAnyHeader()
                   .AllowAnyMethod();
         });
@@ -54,11 +55,11 @@ using (var scope = app.Services.CreateScope())
     var services = scope.ServiceProvider;
     try
     {
-            var context = services.GetRequiredService<AppDbContext>();
-            context.Database.EnsureCreated(); 
+        var context = services.GetRequiredService<AppDbContext>();
+        context.Database.EnsureCreated();
 
-            // [MANUAL MIGRATION] Create Brands Table
-            context.Database.ExecuteSqlRaw(@"
+        // [MANUAL MIGRATION] Create Brands Table
+        context.Database.ExecuteSqlRaw(@"
                 IF OBJECT_ID(N'[Brands]', N'U') IS NULL
                 BEGIN
                     CREATE TABLE [Brands] (
@@ -69,24 +70,24 @@ using (var scope = app.Services.CreateScope())
                 END
             ");
 
-            // [MANUAL MIGRATION] Seed Brands
-            if (!context.Brands.Any())
-            {
-                var defaultBrands = new[] { "Sterilite", "Nike", "TJX", "Landmark-Splash", "Landmark-BBS", "Landmark-MAX", "Nilron", "Walmart", "H&M", "TTI", "TATA", "Inditex", "DCL", "Padini", "KMART" };
-                foreach (var b in defaultBrands) context.Brands.Add(new DataManagementApi.Models.Brand { Name = b });
-                context.SaveChanges();
-            }
+        // [MANUAL MIGRATION] Seed Brands
+        if (!context.Brands.Any())
+        {
+            var defaultBrands = new[] { "Sterilite", "Nike", "TJX", "Landmark-Splash", "Landmark-BBS", "Landmark-MAX", "Nilron", "Walmart", "H&M", "TTI", "TATA", "Inditex", "DCL", "Padini", "KMART" };
+            foreach (var b in defaultBrands) context.Brands.Add(new DataManagementApi.Models.Brand { Name = b });
+            context.SaveChanges();
+        }
 
-            // [MANUAL MIGRATION] Create Brand Tables
-            var recordTables = new[] { 
-                "SteriliteRecords", "NikeRecords", "TJXRecords", "LandmarkSplashRecords", "LandmarkBBSRecords", 
-                "LandmarkMAXRecords", "NilronRecords", "WalmartRecords", "HMRecords", "TTIRecords", 
-                "TATARecords", "InditexRecords", "DCLRecords", "PadiniRecords", "KMARTRecords" 
+        // [MANUAL MIGRATION] Create Brand Tables
+        var recordTables = new[] {
+                "SteriliteRecords", "NikeRecords", "TJXRecords", "LandmarkSplashRecords", "LandmarkBBSRecords",
+                "LandmarkMAXRecords", "NilronRecords", "WalmartRecords", "HMRecords", "TTIRecords",
+                "TATARecords", "InditexRecords", "DCLRecords", "PadiniRecords", "KMARTRecords"
             };
 
-            foreach (var table in recordTables)
-            {
-                string createTableSql = $@"
+        foreach (var table in recordTables)
+        {
+            string createTableSql = $@"
                 IF OBJECT_ID(N'[{table}]', N'U') IS NULL
                 BEGIN
                     CREATE TABLE [{table}] (
@@ -115,11 +116,11 @@ using (var scope = app.Services.CreateScope())
                         CONSTRAINT [PK_{table}] PRIMARY KEY ([Id])
                     );
                 END";
-                context.Database.ExecuteSqlRaw(createTableSql);
-            }
+            context.Database.ExecuteSqlRaw(createTableSql);
+        }
 
-            // 2. Kmart Daily Records Table
-             var createKmartTableSql = @"
+        // 2. Kmart Daily Records Table
+        var createKmartTableSql = @"
                 IF OBJECT_ID(N'[KmartDailyRecords]', N'U') IS NULL
                 BEGIN
                     CREATE TABLE [KmartDailyRecords] (
@@ -142,22 +143,22 @@ using (var scope = app.Services.CreateScope())
                     END
                 END
             ";
-            context.Database.ExecuteSqlRaw(createKmartTableSql);
+        context.Database.ExecuteSqlRaw(createKmartTableSql);
 
-            // Seed Default Admin if No Users
-            if (!context.Users.Any())
+        // Seed Default Admin if No Users
+        if (!context.Users.Any())
+        {
+            context.Users.Add(new DataManagementApi.Models.User
             {
-                context.Users.Add(new DataManagementApi.Models.User
-                {
-                    Username = "admin",
-                    Password = "123", // Default Password
-                    Role = "admin",
-                    Department = "IT",
-                    CreatedAt = DateTime.Now,
-                    Avatar = "https://ui-avatars.com/api/?name=Admin&background=0D8ABC&color=fff"
-                });
-                context.SaveChanges();
-            }
+                Username = "admin",
+                Password = "123", // Default Password
+                Role = "admin",
+                Department = "IT",
+                CreatedAt = DateTime.Now,
+                Avatar = "https://ui-avatars.com/api/?name=Admin&background=0D8ABC&color=fff"
+            });
+            context.SaveChanges();
+        }
     }
     catch (Exception ex)
     {
@@ -167,41 +168,15 @@ using (var scope = app.Services.CreateScope())
 }
 
 // Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment())
-{
-    app.UseSwagger();
-    app.UseSwaggerUI();
-}
+// 始终启用 Swagger，方便调试
+app.UseSwagger();
+app.UseSwaggerUI();
 
 app.UseCors("AllowFrontend");
 
 app.UseAuthentication(); // 启用身份认证
 app.UseAuthorization();  // 启用权限授权
 
-var summaries = new[]
-{
-    "Freezing", "Bracing", "Chilly", "Cool", "Mild", "Warm", "Balmy", "Hot", "Sweltering", "Scorching"
-};
-
-app.MapGet("/weatherforecast", () =>
-{
-    var forecast =  Enumerable.Range(1, 5).Select(index =>
-        new WeatherForecast
-        (
-            DateOnly.FromDateTime(DateTime.Now.AddDays(index)),
-            Random.Shared.Next(-20, 55),
-            summaries[Random.Shared.Next(summaries.Length)]
-        ))
-        .ToArray();
-    return forecast;
-})
-.WithName("GetWeatherForecast");
-
 app.MapControllers();
 
 app.Run();
-
-record WeatherForecast(DateOnly Date, int TemperatureC, string? Summary)
-{
-    public int TemperatureF => 32 + (int)(TemperatureC / 0.5556);
-}

@@ -1,4 +1,4 @@
-import api from './config';
+import api from '../services/api';
 import type { DataRecord } from '../stores/data';
 
 export const getBrands = () => {

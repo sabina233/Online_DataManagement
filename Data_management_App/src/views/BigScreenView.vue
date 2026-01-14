@@ -8,7 +8,8 @@ import {
     Globe, 
     Target, 
     AlertCircle,
-    Clock
+    Clock,
+    Zap
 } from 'lucide-vue-next';
 
 /**
@@ -74,7 +75,7 @@ const bestRegion = computed(() => {
         locMap.set(r.location, (locMap.get(r.location) || 0) + sum);
     });
     let max = -1;
-    let name = '无数据';
+    let name = 'N/A';
     locMap.forEach((v, k) => {
         if (v > max) { max = v; name = k; }
     });
@@ -130,7 +131,7 @@ const renderMap = () => {
     mapChart.setOption({
         backgroundColor: 'transparent',
         title: { text: t('big_screen.distribution'), left: 'left', textStyle: { color: '#66fcf1', fontSize: 14 } },
-        tooltip: { trigger: 'item', formatter: '{b}<br/>实际值: {c}<br/>达成率: {ratio}%' },
+        tooltip: { trigger: 'item', formatter: '{b}<br/>Value: {c}<br/>Ratio: {ratio}%' },
         series: [{
             type: 'pie',
             radius: ['45%', '75%'],
@@ -153,7 +154,7 @@ const renderTrend = () => {
     const acData = months.map(m => allRecords.value.reduce((sum, r: any) => sum + (r[`${m.toLowerCase()}_ac`] || 0), 0));
     const fcData = months.map(m => allRecords.value.reduce((sum, r: any) => sum + (r[`${m.toLowerCase()}_fc`] || 0), 0));
 
-    // 预测分析：基于最近两月数据进行简单线性推导
+    // 预测分析
     let lastIdxWithData = -1;
     for (let i = acData.length - 1; i >= 0; i--) {
         const val = acData[i];
@@ -166,21 +167,19 @@ const renderTrend = () => {
     const predData = acData.map((v, i) => {
         if (v !== null && v > 0) return null; 
         if (lastIdxWithData < 1) return null;
-        
         const lastVal = acData[lastIdxWithData] || 0;
         const prevVal = acData[lastIdxWithData - 1] || 0;
-        
         if (prevVal === 0) return lastVal;
-        
         const growthRate = lastVal / prevVal;
-        return Math.round(lastVal * Math.pow(growthRate, i - lastIdxWithData));
+        const pred = lastVal * Math.pow(growthRate, i - lastIdxWithData);
+        return Math.round(pred > 0 ? pred : 0);
     });
 
     trendChart.setOption({
         backgroundColor: 'transparent',
         tooltip: { trigger: 'axis' },
         legend: { data: [t('big_screen.total_actual'), t('big_screen.total_forecast'), t('big_screen.predictive')], textStyle: { color: '#888' }, bottom: 0 },
-        grid: { top: '15%', bottom: '15%' },
+        grid: { top: '15%', bottom: '15%', left: '10%', right: '5%' },
         xAxis: { type: 'category', data: months, axisLabel: { color: '#888' } },
         yAxis: { type: 'value', splitLine: { lineStyle: { color: '#1f2833' } }, axisLabel: { color: '#888' } },
         series: [
@@ -206,7 +205,8 @@ const renderRank = () => {
 
     rankChart.setOption({
         backgroundColor: 'transparent',
-        grid: { left: '3%', right: '10%', bottom: '3%', containLabel: true },
+        title: { text: t('big_screen.regions_rank'), left: 'left', textStyle: { color: '#66fcf1', fontSize: 14 } },
+        grid: { left: '3%', right: '10%', bottom: '3%', top: '30px', containLabel: true },
         xAxis: { type: 'value', splitLine: { show: false }, axisLabel: { show: false } },
         yAxis: { type: 'category', data: sorted.map(d => d[0]).reverse(), axisLabel: { color: '#ccc' } },
         series: [{
@@ -225,10 +225,10 @@ const renderRank = () => {
 };
 
 /**
- * 组件生命周期：初始化与销毁处理
+ * 组件生命周期
  */
 onMounted(async () => {
-    // 关键：大屏默认加载全局所有品牌的聚合数据
+    // 默认加载全局数据
     await dataStore.loadAllRecords();
     
     updateTime();
@@ -246,27 +246,18 @@ onUnmounted(() => {
     rankChart?.dispose();
 });
 
-/**
- * 响应式处理
- */
 const handleResize = () => {
     mapChart?.resize();
     trendChart?.resize();
     rankChart?.resize();
 };
 
-/**
- * 监听数据或语言切换，自动刷新图表
- */
 watch([allRecords, locale], () => {
     renderMap();
     renderTrend();
     renderRank();
 }, { deep: true });
 
-/**
- * 切换语言函数
- */
 const toggleLang = () => {
     locale.value = locale.value === 'en' ? 'zh' : 'en';
 };
@@ -338,18 +329,30 @@ const toggleLang = () => {
                     <div class="sub-info highlight">{{ t('big_screen.best_region') }}: {{ bestRegion }}</div>
                 </div>
             </div>
+            <!-- Mock Log Card to Make it fuller -->
+             <div class="kpi-card extra-card">
+                <div class="kpi-icon purple"><Zap :size="24" /></div>
+                <div class="kpi-info">
+                    <div class="label">{{ t('big_screen.real_time_log') }}</div>
+                    <div class="log-list">
+                       <span class="log-item">[10:02] Sync Success</span>
+                       <span class="log-item">[09:58] Data Updated</span>
+                    </div>
+                </div>
+            </div>
         </div>
 
         <div class="dashboard-grid">
             <!-- Left Panel -->
             <div class="panel side-panel">
-                <div class="panel-header">{{ t('big_screen.regions_rank') }}</div>
                 <div ref="rankChartRef" class="chart-box"></div>
+                 <div class="panel-footer">
+                    <span>{{ t('big_screen.update_freq') }}: 60{{ t('big_screen.unit_secs') }}</span>
+                </div>
             </div>
 
             <!-- Center Panel -->
             <div class="panel center-panel">
-                <div class="panel-header">{{ t('big_screen.distribution') }}</div>
                 <div ref="mapChartRef" class="chart-box big"></div>
             </div>
 
@@ -357,6 +360,9 @@ const toggleLang = () => {
             <div class="panel side-panel">
                 <div class="panel-header">{{ t('big_screen.trend') }}</div>
                 <div ref="trendChartRef" class="chart-box"></div>
+                <div class="panel-footer">
+                    <span>{{ t('big_screen.data_source') }}: {{ dataStore.brands.length }} {{ t('big_screen.unit_records') }}</span>
+                </div>
             </div>
         </div>
     </div>
@@ -429,13 +435,15 @@ const toggleLang = () => {
 /* Content */
 .bs-content { flex: 1; padding: 24px; display: flex; flex-direction: column; gap: 24px; }
 
-.kpi-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 24px; }
+/* 5 Columns for KPIs */
+.kpi-row { display: grid; grid-template-columns: repeat(5, 1fr); gap: 20px; }
+
 .kpi-card {
     background: rgba(31, 40, 51, 0.4);
     backdrop-filter: blur(10px);
     border: 1px solid rgba(102, 252, 241, 0.1);
     padding: 20px; border-radius: 12px;
-    display: flex; align-items: center; gap: 20px;
+    display: flex; align-items: center; gap: 15px;
     transition: transform 0.3s, border-color 0.3s;
 }
 .kpi-card:hover { transform: translateY(-5px); border-color: rgba(102, 252, 241, 0.4); }
@@ -445,14 +453,19 @@ const toggleLang = () => {
     background: rgba(102, 252, 241, 0.1); color: #66fcf1; 
     display: flex; align-items: center; justify-content: center;
     box-shadow: inset 0 0 15px rgba(102, 252, 241, 0.1);
+    flex-shrink: 0;
 }
 .kpi-icon.blue { color: #3b82f6; background: rgba(59, 130, 246, 0.1); }
 .kpi-icon.green { color: #10b981; background: rgba(16, 185, 129, 0.1); }
 .kpi-icon.orange { color: #f59e0b; background: rgba(245, 158, 11, 0.1); }
+.kpi-icon.purple { color: #a855f7; background: rgba(168, 85, 247, 0.1); }
 
-.kpi-info { flex: 1; }
-.kpi-info .label { font-size: 0.7rem; color: #45a29e; font-weight: 700; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 1px; }
-.kpi-info .value { font-size: 1.6rem; font-weight: 800; color: #fff; line-height: 1; margin-bottom: 6px; font-family: 'Oswald', sans-serif; }
+.kpi-info { flex: 1; min-width: 0; }
+.kpi-info .label { font-size: 0.7rem; color: #45a29e; font-weight: 700; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.kpi-info .value { font-size: 1.4rem; font-weight: 800; color: #fff; line-height: 1; margin-bottom: 6px; font-family: 'Oswald', sans-serif; }
+
+.log-list { font-size: 0.75rem; color: #ccc; display: flex; flex-direction: column; gap: 4px; }
+.log-item { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
 .sub-info { font-size: 0.7rem; color: #45a29e; font-weight: 600; }
 .sub-info.up { color: #10b981; }
@@ -483,12 +496,21 @@ const toggleLang = () => {
     letter-spacing: 1px;
 }
 
+.panel-footer {
+    margin-top: auto;
+    padding-top: 10px;
+    border-top: 1px solid rgba(102, 252, 241, 0.05);
+    font-size: 0.7rem;
+    color: #45a29e;
+    text-align: right;
+}
+
 .chart-box { flex: 1; min-height: 250px; }
 .chart-box.big { min-height: 450px; }
 
-@media (max-width: 1400px) {
-    .dashboard-grid { grid-template-columns: 1fr 1fr; }
-    .center-panel { grid-column: span 2; order: -1; }
+@media (max-width: 1600px) {
+    .kpi-row { grid-template-columns: repeat(3, 1fr); }
+    .extra-card { display: none; }
 }
 
 @media (max-width: 1400px) {

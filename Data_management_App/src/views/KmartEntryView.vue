@@ -386,6 +386,7 @@ const deleteData = async () => {
 };
 
 // --- Excel 导入 ---
+// --- Excel 导入 ---
 const handleFileUpload = (event: Event) => {
     const target = event.target as HTMLInputElement;
     if (!target.files || target.files.length === 0) return;
@@ -418,6 +419,10 @@ const handleFileUpload = (event: Event) => {
             let dataImportedCount = 0;
 
             console.log("开始 Excel 导入，总行数:", rows.length);
+            
+            // 每次导入前先清空当前视图数据 (根据需求覆盖)
+            // dataMap.clear(); 
+            // initialDataMap.clear();
 
             rows.forEach((row, rowIndex) => {
                 if (rowIndex === 0) return; // 跳过表头 row
@@ -426,69 +431,54 @@ const handleFileUpload = (event: Event) => {
                 const rawCat = row[1]?.toString().trim();
                 const rawItem = row[2]?.toString().trim();
 
-                // 层级补齐逻辑：如果父级发生变动，必须清除所有子级的旧状态
+                // 层级补齐逻辑
                 if (rawLoc) {
                     currLoc = rawLoc;
-                    currCat = "";  // 站点变更，重置类别和项目
+                    currCat = ""; 
                     currItem = "";
                 }
                 
                 if (rawCat) {
                     currCat = rawCat;
-                    currItem = ""; // 类别变更，重置项目
+                    currItem = ""; 
                 }
                 
                 if (rawItem) {
                     currItem = rawItem;
                 }
 
-                // 如果基础信息（站点或类别）缺失，无法匹配 schema，跳过
                 if (!currLoc || !currCat) return;
 
-                // 1. 验证站点是否存在于 Schema
+                // 1. 验证站点 (Fuzzy Match)
                 const locSchema = schemaData.find(s => normalizeMatch(s.location) === normalizeMatch(currLoc));
-                if (!locSchema) {
-                    if (rowIndex < 20) console.warn(`行 ${rowIndex}: 站点 "${currLoc}" 不匹配，跳过。`);
-                    return;
-                }
+                if (!locSchema) return;
+                const loc = locSchema.location;
 
-                // 2. 类别容错处理 (RFID 模糊匹配)
-                const isRFIDMatch = normalizeMatch(currCat) === "RFID";
-                const targetCatName = isRFIDMatch ? "RFID" : currCat;
+                // 2. 验证类别 (Fuzzy Match)
+                const groupSchema = locSchema.groups.find(g => normalizeMatch(g.name) === normalizeMatch(currCat));
+                if (!groupSchema) return;
+                const cat = groupSchema.name;
 
-                // 3. 验证类别是否存在于该站点下
-                const catGroupSchema = locSchema.groups.find(g => normalizeMatch(g.name) === normalizeMatch(targetCatName));
-                if (!catGroupSchema) {
-                    if (rowIndex < 20) console.warn(`行 ${rowIndex}: 类别 "${targetCatName}" 未在站点 "${currLoc}" 下找到，跳过。`);
-                    return;
-                }
-
-                // 4. 处理子项 (RFID 项目)
-                let finalSubCategory = "";
-                if (targetCatName === "RFID") {
-                    // 对于 RFID 组，项目名称必须匹配。使用更激进的标准化匹配。
-                    const matchedItem = catGroupSchema.items.find(i => normalizeMatch(i) === normalizeMatch(currItem));
-                    if (matchedItem) {
-                        finalSubCategory = matchedItem;
-                    } else {
-                        // 如果当前行只有数据而没有项目名，可能是 Excel 格式错位，跳过以防污染
-                        if (rowIndex < 30) {
-                            console.warn(`行 ${rowIndex}: RFID 子项 "${currItem}" 匹配失败 (Location: ${currLoc}, normalized: ${normalizeMatch(currItem)})，跳过数据解析。`);
-                        }
-                        return;
-                    }
+                // 3. 处理子项
+                let sub = "";
+                if (normalizeMatch(cat) === "RFID") {
+                     const itemSchema = groupSchema.items.find(i => normalizeMatch(i) === normalizeMatch(currItem));
+                     if (itemSchema) {
+                         sub = itemSchema;
+                     } else {
+                         return; // RFID 项目未匹配，跳过
+                     }
                 } else {
-                    // 非 RFID 类别，在我们的数据映射中 subCategory 固定为空字符串
-                    finalSubCategory = "";
+                    sub = "";
                 }
 
-                // 5. 提取每日数值 (从第 4 列开始)
+                // 4. 提取数据
                 for (let d = 1; d <= daysInMonth.value; d++) {
                     const rowValue = row[d + 2];
                     if (rowValue !== undefined && rowValue !== null && rowValue !== "") {
                         const quantity = parseInt(rowValue.toString());
                         if (!isNaN(quantity)) {
-                            const key = getCellKey(currLoc, targetCatName, finalSubCategory, d);
+                            const key = getCellKey(loc, cat, sub, d);
                             dataMap.set(key, quantity);
                             dataImportedCount++;
                         }
@@ -497,14 +487,21 @@ const handleFileUpload = (event: Event) => {
             });
 
             if (dataImportedCount > 0) {
-                isDirty.value = true;
+                isDirty.value = true; // 标记以便 saveData 识别
+                // 自动保存
+                //await saveData();
+                // 自动刷新页面数据 (重新从数据库加载，确保一致性)
                 alert(`成功导入 ${dataImportedCount} 条数据。请核对后点击“保存到数据库”。`);
+                //await loadData();
             } else {
-                alert("未识别到有效数据，请检查 Excel 模板是否符合：[站点, 类别, 项目, 1日, 2日...] 结构。");
+                alert("未识别到有效数据，请检查 Excel 模板。");
             }
         } catch (ex) {
             console.error("Excel 导入过程中发生错误:", ex);
-            alert("文件读取失败，请确保上传的是有效的 Excel 表格。");
+            alert("文件读取失败。");
+        } finally {
+            // Reset input
+             if (target) target.value = '';
         }
     };
     if (file) {

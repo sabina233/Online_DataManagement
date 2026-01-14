@@ -482,12 +482,26 @@ onMounted(() => {
 
 table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
 th, td { border: 1px solid #e2e8f0; padding: 10px; text-align: center; }
-th { background: #f1f5f9; color: #475569; font-weight: 600; }
+/* Table Header Sticky */
+thead th {
+    position: sticky;
+    top: 0;
+    z-index: 20; /* Higher than body sticky cols */
+    background: #f1f5f9; /* Ensure opacity */
+    box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+}
 
 .table-container { overflow: auto; max-height: 600px; }
 .fixed-col { position: sticky; z-index: 10; background: white; white-space: nowrap; }
+
+/* Intersection of sticky header and fixed column needs highest Z-index */
+thead th.fixed-col {
+    z-index: 30;
+}
+
 .col-loc { left: 0; width: 80px; }
 .col-cat-merged { left: 80px; width: 250px; }
+/* .col-cat { left: 80px; width: 120px; }  <-- redundant or needed for body? logic below uses it */
 .col-cat { left: 80px; width: 120px; }
 .col-sub { left: 120px; width: 130px; }
 

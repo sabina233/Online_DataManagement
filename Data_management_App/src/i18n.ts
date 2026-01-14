@@ -37,7 +37,16 @@ const messages = {
             total_brands: 'Total Brands',
             active_tracking: 'Active items tracking',
             submit_data: 'Submit Data',
-            add_new_records: 'Add new records for the year'
+            add_new_records: 'Add new records for the year',
+            quick_access: 'Quick Access',
+            system_status: 'System Status',
+            server_status: 'Server Status',
+            database_status: 'Database Status',
+            last_sync: 'Last Sync',
+            online: 'Online',
+            connected: 'Connected',
+            view_report: 'View Report',
+            kmart_desc: 'Access Kmart Order Analytics'
         },
         entry: {
             title: 'Data Entry',
@@ -96,7 +105,12 @@ const messages = {
             system_online: 'SYSTEM ONLINE',
             mom_growth: 'MoM Growth',
             predictive: 'Predictive Analysis',
-            best_region: 'Best Region'
+            best_region: 'Best Region',
+            real_time_log: 'REAL-TIME LOG',
+            data_source: 'DATA SOURCE',
+            update_freq: 'UPDATE FREQUENCY',
+            unit_secs: 's',
+            unit_records: 'Records'
         }
     },
     zh: {
@@ -135,7 +149,16 @@ const messages = {
             total_brands: '品牌总数',
             active_tracking: '当前追踪项目',
             submit_data: '提交数据',
-            add_new_records: '添加本季度的新记录'
+            add_new_records: '添加本季度的新记录',
+            quick_access: '快速访问',
+            system_status: '系统状态',
+            server_status: '服务器状态',
+            database_status: '数据库状态',
+            last_sync: '最后同步',
+            online: '运行中',
+            connected: '已连接',
+            view_report: '查看报表',
+            kmart_desc: '访问 Kmart 订单分析'
         },
         entry: {
             title: '数据录入',
@@ -194,7 +217,12 @@ const messages = {
             system_online: '系统在线',
             mom_growth: '环比增长',
             predictive: '智能预测分析',
-            best_region: '表现最佳区域'
+            best_region: '表现最佳区域',
+            real_time_log: '实时日志',
+            data_source: '数据源',
+            update_freq: '更新频率',
+            unit_secs: '秒',
+            unit_records: '条记录'
         }
     }
 };

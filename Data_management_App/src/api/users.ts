@@ -1,4 +1,4 @@
-import api from './config';
+import api from '../services/api';
 import type { User } from '../stores/auth';
 
 export const getUsers = () => {

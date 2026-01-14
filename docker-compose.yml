@@ -1,0 +1,27 @@
+services:
+  # Backend API Service
+  api:
+    build:
+      context: ./Data_management_Api/DataManagementApi
+      dockerfile: Dockerfile
+    container_name: datamanagement_api
+    environment:
+      - ConnectionStrings__DefaultConnection=Server=192.168.11.9;Database=DataManagementDb;User Id=sa;Password=@1Q2W3e4r;TrustServerCertificate=True;
+      - ASPNETCORE_ENVIRONMENT=Production
+      # Allow CORS from frontend container or browser host
+      - AllowedHosts=*
+    ports:
+      - "8080:8080"
+    restart: always
+
+  # Frontend Web Service
+  web:
+    build:
+      context: ./Data_management_App
+      dockerfile: Dockerfile
+    container_name: datamanagement_web
+    ports:
+      - "80:80"
+    depends_on:
+      - api
+    restart: always
