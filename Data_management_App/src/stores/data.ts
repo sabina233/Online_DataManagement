@@ -113,8 +113,23 @@ export const useDataStore = defineStore('data', () => {
         }
     }
 
-    // 初始化加载
-    fetchBrands();
+    /**
+     * 删除指定数据记录
+     */
+    async function deleteRecord(id: number, brand: string) {
+        try {
+            await api.delete(`/Data/${id}`, { params: { brand } });
 
-    return { brands, records, loadRecords, loadAllRecords, saveRecord, fetchBrands };
+            // 更新本地状态
+            const index = records.value.findIndex(r => r.id === id);
+            if (index !== -1) {
+                records.value.splice(index, 1);
+            }
+        } catch (e) {
+            console.error('删除记录失败:', e);
+            throw e;
+        }
+    }
+
+    return { brands, records, loadRecords, loadAllRecords, saveRecord, deleteRecord, fetchBrands };
 });

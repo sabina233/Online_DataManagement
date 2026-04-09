@@ -42,7 +42,7 @@ const setOptions = () => {
         grid: {
             left: '3%',
             right: '4%',
-            bottom: '10%',
+            bottom: '15%',
             containLabel: true
         },
         xAxis: {
@@ -62,7 +62,7 @@ const setOptions = () => {
         })) || []
     };
 
-    chartInstance.setOption(option);
+    chartInstance.setOption(option, true);
 };
 
 watch(() => [props.seriesData, props.title, props.option], () => {

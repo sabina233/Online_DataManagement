@@ -76,6 +76,22 @@
                         <td colspan="50" class="empty-state">{{ t('brand.no_data') }}</td>
                     </tr>
                 </tbody>
+                <tfoot v-if="filteredRecords.length > 0">
+                    <tr class="total-row">
+                        <td class="sticky-col loc-col" style="font-weight: 600;">Total</td>
+                        <td class="sticky-col item-col"></td>
+                        <template v-for="col in variableMonths" :key="'total_' + col.key">
+                            <td :class="{'bg-q': col.isQ}" style="font-weight: 600;">{{ formatNum(tableTotals[col.key + '_ac']) }}</td>
+                            <td :class="{'bg-q': col.isQ}" style="font-weight: 600;">{{ formatNum(tableTotals[col.key + '_fc']) }}</td>
+                            <td :class="[
+                                    tableTotals[col.key + '_diff'] < 100 ? 'text-danger' : 'text-success',
+                                    {'bg-q': col.isQ}
+                                ]" style="font-weight: 600;">
+                                {{ formatNum(tableTotals[col.key + '_diff']).includes('.') ? tableTotals[col.key + '_diff'].toFixed(2) : tableTotals[col.key + '_diff'] }}%
+                            </td>
+                        </template>
+                    </tr>
+                </tfoot>
             </table>
         </div>
 
@@ -117,6 +133,86 @@
                 :xAxisData="trendChart.xAxis" 
                 :seriesData="trendChart.series" 
             />
+        </div>
+    </div>
+
+    <!-- YoY Analysis Section -->
+    <div class="card yoy-section">
+        <div class="section-toolbar no-header">
+            <h3 style="margin: 0; font-size: 1rem; color: var(--text-main);">YoY Analysis</h3>
+            <div class="filter-group" style="margin-left: auto;">
+                <div class="filter-item">
+                    <label>Total Until:</label>
+                    <select v-model="yoyTotalMonthRange" class="input-std">
+                        <option v-for="(m, idx) in monthsList" :key="m.key" :value="idx + 1">{{ m.label }}</option>
+                    </select>
+                </div>
+                <div class="filter-item">
+                    <label>Base Year:</label>
+                    <select v-model="yoyBaseYear" class="input-std">
+                        <option v-for="y in uniqueYears" :key="y" :value="y">{{ y }}</option>
+                    </select>
+                </div>
+                <div class="filter-item">
+                    <label>Target Year:</label>
+                    <select v-model="yoyTargetYear" class="input-std">
+                        <option v-for="y in uniqueYears" :key="y" :value="y">{{ y }}</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+        
+        <div class="table-scroll" style="max-height: unset; border-top: 1px solid var(--border-light);">
+            <table>
+                <thead>
+                    <tr>
+                        <th class="sticky-col loc-col">Month</th>
+                        <th>{{ yoyTargetYear }} AC</th>
+                        <th>{{ yoyTargetYear }} FC</th>
+                        <th>{{ yoyBaseYear }} AC</th>
+                        <th>{{ yoyBaseYear }} FC</th>
+                        <th>AC YoY (%)</th>
+                        <th>FC YoY (%)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr v-for="row in yoyTableData" :key="row.month">
+                        <td class="sticky-col loc-col">{{ row.label }}</td>
+                        <td>{{ formatNum(row.currAc) }}</td>
+                        <td>{{ formatNum(row.currFc) }}</td>
+                        <td>{{ formatNum(row.prevAc) }}</td>
+                        <td>{{ formatNum(row.prevFc) }}</td>
+                        <td :class="row.acYoy !== null && row.acYoy < 100 ? 'text-danger' : 'text-success'">
+                            <span v-if="row.acYoy !== null">{{ row.acYoy.toFixed(2) }}%</span>
+                            <span v-else>-</span>
+                        </td>
+                        <td :class="row.fcYoy !== null && row.fcYoy < 100 ? 'text-danger' : 'text-success'">
+                            <span v-if="row.fcYoy !== null">{{ row.fcYoy.toFixed(2) }}%</span>
+                            <span v-else>-</span>
+                        </td>
+                    </tr>
+                    <tr v-if="yoyTableData.length === 0">
+                        <td colspan="7" class="empty-state">{{ t('brand.no_data') || 'No Data' }}</td>
+                    </tr>
+                </tbody>
+                <tfoot v-if="yoyTableData.length > 0">
+                    <tr class="total-row">
+                        <td class="sticky-col loc-col" style="font-weight: 600;">Total (Jan~{{ monthsList[yoyTotalMonthRange - 1]?.label }})</td>
+                        <td style="font-weight: 600;">{{ formatNum(yoyTotals.currAc) }}</td>
+                        <td style="font-weight: 600;">{{ formatNum(yoyTotals.currFc) }}</td>
+                        <td style="font-weight: 600;">{{ formatNum(yoyTotals.prevAc) }}</td>
+                        <td style="font-weight: 600;">{{ formatNum(yoyTotals.prevFc) }}</td>
+                        <td :class="yoyTotals.acYoy !== null && yoyTotals.acYoy < 100 ? 'text-danger' : 'text-success'" style="font-weight: 600;">
+                            <span v-if="yoyTotals.acYoy !== null">{{ yoyTotals.acYoy.toFixed(2) }}%</span>
+                            <span v-else>-</span>
+                        </td>
+                        <td :class="yoyTotals.fcYoy !== null && yoyTotals.fcYoy < 100 ? 'text-danger' : 'text-success'" style="font-weight: 600;">
+                            <span v-if="yoyTotals.fcYoy !== null">{{ yoyTotals.fcYoy.toFixed(2) }}%</span>
+                            <span v-else>-</span>
+                        </td>
+                    </tr>
+                </tfoot>
+            </table>
         </div>
     </div>
   </div>
@@ -220,34 +316,45 @@ const filteredRecords = computed(() => {
 });
 
 /**
+ * 获取用于展示的地区名称
+ * 针对 "Landmark-Splash" 品牌，取前两个字符（国家代码）聚合
+ */
+const getDisplayLocation = (loc: string) => {
+    if (!loc) return 'Unknown';
+    if (currentBrand.value === 'Landmark-Splash') {
+        const country = loc.substring(0, 2).toUpperCase();
+        return ['CN', 'BD', 'IN', 'TK', 'VN', 'KH', 'ID'].includes(country) ? country : loc;
+    }
+    return loc;
+};
+
+/**
  * Chart 1: Location AC vs FC Grouped Bar Chart
  */
 const locDiffChart = computed(() => {
-    // X Axis: Locations
-    const locs = uniqueLocations.value;
+    // Group Data by Display Location
+    const aggregatedData = new Map<string, { ac: number, fc: number }>();
     
-    // Calculate Sum(AC) and Sum(FC) for each location up to diffMonthRange
-    const acData: number[] = [];
-    const fcData: number[] = [];
-
-    locs.forEach(loc => {
-        const locRecords = filteredRecords.value.filter(r => r.location === loc);
-        let sumAc = 0;
-        let sumFc = 0;
+    filteredRecords.value.forEach((r: any) => {
+        const displayLoc = getDisplayLocation(r.location);
+        if (!aggregatedData.has(displayLoc)) {
+            aggregatedData.set(displayLoc, { ac: 0, fc: 0 });
+        }
+        const entry = aggregatedData.get(displayLoc)!;
         
-        locRecords.forEach((r: any) => {
-            for (let i = 0; i < diffMonthRange.value; i++) {
-                const mKey = monthsKeyList[i];
-                sumAc += (r[`${mKey}_ac`] || 0);
-                sumFc += (r[`${mKey}_fc`] || 0);
-            }
-        });
-        acData.push(sumAc);
-        fcData.push(sumFc);
+        for (let i = 0; i < diffMonthRange.value; i++) {
+            const mKey = monthsKeyList[i];
+            entry.ac += (r[`${mKey}_ac`] || 0);
+            entry.fc += (r[`${mKey}_fc`] || 0);
+        }
     });
 
+    const displayLocs = Array.from(aggregatedData.keys());
+    const acData = displayLocs.map(l => aggregatedData.get(l)!.ac);
+    const fcData = displayLocs.map(l => aggregatedData.get(l)!.fc);
+
     return {
-        xAxis: locs,
+        xAxis: displayLocs,
         series: [
             { 
                 name: 'AC (Jan~' + (monthsList[diffMonthRange.value - 1]?.label || '') + ')', 
@@ -271,28 +378,32 @@ const locDiffChart = computed(() => {
 const trendChart = computed(() => {
     // X Axis: Jan - Dec
     const xAxis = monthsKeyList.map(m => m.charAt(0).toUpperCase() + m.slice(1));
-    const locs = uniqueLocations.value;
     
-    // Create a series for EACH location
-    // Colors for different lines
+    // Group by Display Location
+    const aggregatedSeries = new Map<string, number[]>();
+    
+    filteredRecords.value.forEach((r: any) => {
+        const displayLoc = getDisplayLocation(r.location);
+        if (!aggregatedSeries.has(displayLoc)) {
+            aggregatedSeries.set(displayLoc, new Array(12).fill(0));
+        }
+        const data = aggregatedSeries.get(displayLoc)!;
+        
+        monthsKeyList.forEach((mKey, idx) => {
+            data[idx] += (r[`${mKey}_ac`] || 0);
+        });
+    });
+
+    const displayLocs = Array.from(aggregatedSeries.keys());
     const colors = ['#3b82f6', '#ef4444', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899', '#6366f1', '#14b8a6'];
     
-    const series = locs.map((loc, idx) => {
-        // For this location, calculate total AC for each month
-        const locRecords = filteredRecords.value.filter(r => r.location === loc);
-        
-        const data = monthsKeyList.map(mKey => {
-            return locRecords.reduce((sum, r: any) => sum + (r[`${mKey}_ac`] || 0), 0);
-        });
-
-        return {
-            name: loc,
-            type: 'line' as const,
-            data: data,
-            smooth: true,
-            itemStyle: { color: colors[idx % colors.length] }
-        };
-    });
+    const series = displayLocs.map((loc, idx) => ({
+        name: loc,
+        type: 'line' as const,
+        data: aggregatedSeries.get(loc)!,
+        smooth: true,
+        itemStyle: { color: colors[idx % colors.length] }
+    }));
 
     return {
         xAxis: xAxis,
@@ -314,6 +425,103 @@ const totalPages = computed(() => Math.ceil(filteredRecords.value.length / pageS
  */
 watch(filteredRecords, () => {
     currentPage.value = 1;
+});
+
+const tableTotals = computed(() => {
+    const totals: any = {};
+    const records = filteredRecords.value;
+    
+    variableMonths.value.forEach(col => {
+        let acSum = 0;
+        let fcSum = 0;
+        records.forEach((r: any) => {
+            acSum += (Number(r[`${col.key}_ac`]) || 0);
+            fcSum += (Number(r[`${col.key}_fc`]) || 0);
+        });
+        totals[`${col.key}_ac`] = acSum;
+        totals[`${col.key}_fc`] = fcSum;
+        totals[`${col.key}_diff`] = fcSum === 0 ? 0 : Number(((acSum / fcSum) * 100).toFixed(2));
+    });
+    return totals;
+});
+
+// For YoY Table
+const uniqueYears = computed(() => {
+    const years = dataStore.records.map((r: any) => r.year).filter(Boolean);
+    const yearSet = new Set(years);
+    const sorted = Array.from(yearSet).sort((a: any, b: any) => b - a);
+    return sorted.length ? sorted : [new Date().getFullYear(), new Date().getFullYear() - 1]; // Ensure at least one to fall back to
+});
+
+const yoyTargetYear = ref(new Date().getFullYear());
+const yoyBaseYear = ref(new Date().getFullYear() - 1);
+const yoyTotalMonthRange = ref(new Date().getMonth() + 1 || 12);
+
+watch(uniqueYears, (newYears) => {
+    if (newYears.length) {
+        if (!newYears.includes(yoyTargetYear.value)) {
+            yoyTargetYear.value = newYears[0] as number;
+        }
+        if (!newYears.includes(yoyBaseYear.value)) {
+            yoyBaseYear.value = newYears.length > 1 ? newYears[1] as number : newYears[0] as number;
+        }
+    }
+}, { immediate: true });
+
+const yoyTableData = computed(() => {
+    const allRecords = dataStore.records || [];
+    const currYear = yoyTargetYear.value as number;
+    const prevYear = yoyBaseYear.value as number;
+
+    const currYearRecs = allRecords.filter((r: any) => r.year === currYear);
+    const prevYearRecs = allRecords.filter((r: any) => r.year === prevYear);
+
+    return monthsList.map(m => {
+        let currAc = 0, currFc = 0;
+        let prevAc = 0, prevFc = 0;
+
+        currYearRecs.forEach((r: any) => {
+            currAc += (Number(r[`${m.key}_ac`]) || 0);
+            currFc += (Number(r[`${m.key}_fc`]) || 0);
+        });
+
+        prevYearRecs.forEach((r: any) => {
+            prevAc += (Number(r[`${m.key}_ac`]) || 0);
+            prevFc += (Number(r[`${m.key}_fc`]) || 0);
+        });
+
+        let acYoy = prevAc === 0 ? null : (currAc / prevAc) * 100;
+        let fcYoy = prevFc === 0 ? null : (currFc / prevFc) * 100;
+
+        return {
+            month: m.key,
+            label: m.label,
+            currAc, currFc, prevAc, prevFc,
+            acYoy: acYoy !== null ? Number(acYoy.toFixed(2)) : null,
+            fcYoy: fcYoy !== null ? Number(fcYoy.toFixed(2)) : null
+        };
+    });
+});
+
+const yoyTotals = computed(() => {
+    let currAc = 0, currFc = 0, prevAc = 0, prevFc = 0;
+    
+    const activeRows = yoyTableData.value.slice(0, yoyTotalMonthRange.value);
+    activeRows.forEach(row => {
+        currAc += row.currAc;
+        currFc += row.currFc;
+        prevAc += row.prevAc;
+        prevFc += row.prevFc;
+    });
+
+    let acYoy = prevAc === 0 ? null : (currAc / prevAc) * 100;
+    let fcYoy = prevFc === 0 ? null : (currFc / prevFc) * 100;
+
+    return {
+        currAc, currFc, prevAc, prevFc,
+        acYoy: acYoy !== null ? Number(acYoy.toFixed(2)) : null,
+        fcYoy: fcYoy !== null ? Number(fcYoy.toFixed(2)) : null
+    };
 });
 
 /**

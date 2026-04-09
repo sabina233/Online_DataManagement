@@ -71,6 +71,7 @@
                     <option value="annual">年度</option>
                     <option value="half">半年度</option>
                     <option value="quarter">季度</option>
+                    <option value="month">月份</option>
                 </select>
                 
                 <select v-if="module2FilterType !== 'annual'" v-model="module2FilterValue" class="input-std input-sm">
@@ -246,8 +247,8 @@ const normalizeMatch = (s: any): string => {
 
 
 // --- 模块 2 筛选状态 ---
-const module2FilterType = ref<'annual' | 'half' | 'quarter'>('annual');
-const module2FilterValue = ref<string>('all');
+const module2FilterType = ref<'annual' | 'half' | 'quarter' | 'month'>('month');
+const module2FilterValue = ref<string>(selectedMonth.value.toString());
 
 const module2FilterOptions = computed(() => {
     switch (module2FilterType.value) {
@@ -259,13 +260,22 @@ const module2FilterOptions = computed(() => {
             { label: '第三季度', value: 'Q3' },
             { label: '第四季度', value: 'Q4' }
         ];
+        case 'month': return Array.from({ length: 12 }, (_, i) => ({
+            label: `${i + 1}月`,
+            value: (i + 1).toString()
+        }));
         default: return [];
     }
 });
 
 // 重置筛选值
-watch(module2FilterType, () => {
-    module2FilterValue.value = module2FilterOptions.value[0]?.value || 'all';
+// 重置筛选值
+watch(module2FilterType, (newVal) => {
+    if (newVal === 'month') {
+        module2FilterValue.value = selectedMonth.value.toString();
+    } else {
+        module2FilterValue.value = module2FilterOptions.value[0]?.value || 'all';
+    }
 });
 
 // --- 数据处理 ---
@@ -296,6 +306,9 @@ const filteredModule2Data = computed(() => {
             if (module2FilterValue.value === 'Q2') return month >= 4 && month <= 6;
             if (module2FilterValue.value === 'Q3') return month >= 7 && month <= 9;
             if (module2FilterValue.value === 'Q4') return month >= 10 && month <= 12;
+        }
+        if (module2FilterType.value === 'month') {
+            return month === parseInt(module2FilterValue.value);
         }
         return true;
     });

@@ -97,7 +97,7 @@ namespace DataManagementApi.Controllers
                 issuer: _config["Jwt:Issuer"],
                 audience: _config["Jwt:Audience"],
                 claims: claims,
-                expires: DateTime.Now.AddHours(144), // 144小时过期
+                expires: DateTime.Now.AddDays(14), // 2 weeks expiration
                 signingCredentials: credentials);
 
             return new JwtSecurityTokenHandler().WriteToken(token);

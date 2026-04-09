@@ -9,7 +9,7 @@ import { LogIn } from 'lucide-vue-next';
  * 登录视图：处理用户身份验证
  */
 const { t } = useI18n();
-const username = ref('Admin');
+const username = ref('');
 const password = ref('');
 const error = ref('');
 const isLoading = ref(false);

@@ -57,7 +57,9 @@ const messages = {
             success: 'Data saved successfully!',
             error: 'Error saving data.',
             location_ph: 'e.g. Shanghai',
-            item_ph: 'Brand Name'
+            item_ph: 'Brand Name',
+            clear: 'Clear List Data',
+            edit: 'Edit Existing Data'
         },
         brand: {
             all_time: 'All Time',
@@ -169,7 +171,9 @@ const messages = {
             success: '数据保存成功！',
             error: '保存数据时出错。',
             location_ph: '例如：上海',
-            item_ph: '品牌名称'
+            item_ph: '品牌名称',
+            clear: '清除列表数据',
+            edit: '修改现有数据'
         },
         brand: {
             all_time: '全部时间',

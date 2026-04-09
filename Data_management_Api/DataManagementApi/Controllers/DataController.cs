@@ -45,12 +45,14 @@ namespace DataManagementApi.Controllers
 
             if (acValue > 0 || fcValue > 0)
             {
-                return Ok(new { 
-                    exists = true, 
-                    record = new { 
-                        ac = acValue, 
-                        fc = fcValue 
-                    } 
+                return Ok(new
+                {
+                    exists = true,
+                    record = new
+                    {
+                        ac = acValue,
+                        fc = fcValue
+                    }
                 });
             }
 
@@ -131,15 +133,16 @@ namespace DataManagementApi.Controllers
                 return BadRequest("Brand is required.");
 
             string brand = payload["brand"].ToString()!;
-            
+
             // 提取通用属性
             var json = System.Text.Json.JsonSerializer.Serialize(payload);
-            
+
             // 根据 Brand 反序列化为具体类型
             BaseRecord? record = null;
             var options = new System.Text.Json.JsonSerializerOptions { PropertyNameCaseInsensitive = true };
 
-            switch(brand) {
+            switch (brand)
+            {
                 case "Sterilite": record = System.Text.Json.JsonSerializer.Deserialize<SteriliteRecord>(json, options); break;
                 case "Nike": record = System.Text.Json.JsonSerializer.Deserialize<NikeRecord>(json, options); break;
                 case "TJX": record = System.Text.Json.JsonSerializer.Deserialize<TJXRecord>(json, options); break;
@@ -173,17 +176,44 @@ namespace DataManagementApi.Controllers
                     return Ok(existing);
                 }
             }
-            
+
             CalculateComputedFields(record);
             await AddRecordToDb(brand, record);
             await _context.SaveChangesAsync();
+            await _context.SaveChangesAsync();
             return Ok(record);
         }
-        
+
+        /// <summary>
+        /// 删除单条数据记录
+        /// </summary>
+        [HttpDelete("{id}")]
+        public async Task<ActionResult> DeleteRecord(int id, [FromQuery] string brand)
+        {
+            if (string.IsNullOrEmpty(brand)) return BadRequest("Brand is required.");
+
+            try
+            {
+                var dbSet = GetDbSetObjectByBrand(brand);
+                var record = await dbSet.FindAsync(id);
+
+                if (record == null) return NotFound();
+
+                dbSet.Remove(record);
+                await _context.SaveChangesAsync();
+
+                return Ok();
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Error deleting record: {ex.Message}");
+            }
+        }
+
         // 辅助方法：添加记录到对应的 DbSet
         private async Task AddRecordToDb(string brand, BaseRecord record)
         {
-             switch (brand)
+            switch (brand)
             {
                 case "Sterilite": await _context.SteriliteRecords.AddAsync((SteriliteRecord)record); break;
                 case "Nike": await _context.NikeRecords.AddAsync((NikeRecord)record); break;
@@ -205,7 +235,7 @@ namespace DataManagementApi.Controllers
 
         private dynamic GetDbSetObjectByBrand(string brand)
         {
-             switch (brand)
+            switch (brand)
             {
                 case "Sterilite": return _context.SteriliteRecords;
                 case "Nike": return _context.NikeRecords;

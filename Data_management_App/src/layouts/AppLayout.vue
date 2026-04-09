@@ -349,7 +349,7 @@ onMounted(() => {
 }
 
 .header-left h2 {
-  font-size: 1.1rem;
+  font-size: 1.8rem;
   font-weight: 600;
   color: var(--text-main);
   text-transform: capitalize;
