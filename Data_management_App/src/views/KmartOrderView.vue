@@ -269,12 +269,27 @@ const module2FilterOptions = computed(() => {
 });
 
 // 重置筛选值
-// 重置筛选值
 watch(module2FilterType, (newVal) => {
     if (newVal === 'month') {
         module2FilterValue.value = selectedMonth.value.toString();
     } else {
         module2FilterValue.value = module2FilterOptions.value[0]?.value || 'all';
+    }
+});
+
+// 保持全局月份和模块2的月份同步
+watch(selectedMonth, (newVal) => {
+    if (module2FilterType.value === 'month' && module2FilterValue.value !== newVal.toString()) {
+        module2FilterValue.value = newVal.toString();
+    }
+});
+
+watch(module2FilterValue, (newVal) => {
+    if (module2FilterType.value === 'month') {
+        const parsed = parseInt(newVal);
+        if (!isNaN(parsed) && selectedMonth.value !== parsed) {
+            selectedMonth.value = parsed;
+        }
     }
 });
 
