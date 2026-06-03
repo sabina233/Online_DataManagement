@@ -143,7 +143,8 @@ const schemaData = [
       { name: "吊牌", items: [""] },
       { name: "贴纸", items: [""] }, // 允许显示的名称重复，Key 会处理唯一性
       { name: "卡类 (袜卡/腰封)", items: [""] },
-      { name: "洗标", items: [""] }
+      { name: "洗标", items: [""] },
+      { name: "织标", items: [""] }
     ]
   },
   {
@@ -153,7 +154,8 @@ const schemaData = [
       { name: "吊牌", items: [""] },
       { name: "贴纸", items: [""] },
       { name: "卡类 (袜卡/腰封)", items: [""] },
-      { name: "洗标", items: [""] }
+      { name: "洗标", items: [""] },
+      { name: "织标", items: [""] }
     ]
   },
   {
@@ -163,7 +165,8 @@ const schemaData = [
           { name: "吊牌", items: [""] },
           { name: "贴纸", items: [""] },
           { name: "卡类 (袜卡/腰封)", items: [""] },
-          { name: "洗标", items: [""] }
+          { name: "洗标", items: [""] },
+          { name: "织标", items: [""] }
       ]
   },
   {
@@ -173,7 +176,8 @@ const schemaData = [
           { name: "吊牌", items: [""] },
           { name: "贴纸", items: [""] },
           { name: "卡类 (袜卡/腰封)", items: [""] },
-          { name: "洗标", items: [""] }
+          { name: "洗标", items: [""] },
+          { name: "织标", items: [""] }
       ]
   },
   {
@@ -194,7 +198,8 @@ const schemaData = [
           { name: "吊牌", items: [""] },
           { name: "贴纸", items: [""] },
           { name: "卡类 (袜卡/腰封)", items: [""] },
-          { name: "洗标", items: [""] }
+          { name: "洗标", items: [""] },
+          { name: "织标", items: [""] }
       ]
   }
 ];

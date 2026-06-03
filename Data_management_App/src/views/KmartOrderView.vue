@@ -224,12 +224,12 @@ const allData = ref<ApiRecord[]>([]);
 
 // 应用与 EntryView 一致的业务 Schema
 const schemaData = [
-  { location: "China", groups: [{ name: "RFID", items: ["贴纸 44X18MM", "吊牌 45X76MM", "吊牌 45X61MM", "半成品"] }, { name: "吊牌", items: [""] }, { name: "贴纸", items: [""] }, { name: "卡类 (袜卡/腰封)", items: [""] }, { name: "洗标", items: [""] }] },
-  { location: "Vietnam", groups: [{ name: "RFID", items: ["贴纸 44X18MM", "吊牌 45X76MM", "吊牌 45X61MM"] }, { name: "吊牌", items: [""] }, { name: "贴纸", items: [""] }, { name: "卡类 (袜卡/腰封)", items: [""] }, { name: "洗标", items: [""] }] },
-  { location: "Cambodia", groups: [{ name: "RFID", items: ["贴纸 44X18MM", "吊牌 45X76MM", "吊牌 45X61MM"] }, { name: "吊牌", items: [""] }, { name: "贴纸", items: [""] }, { name: "卡类 (袜卡/腰封)", items: [""] }, { name: "洗标", items: [""] }] },
-  { location: "Indonesia", groups: [{ name: "RFID", items: ["贴纸 44X18MM", "吊牌 45X76MM", "吊牌 45X61MM"] }, { name: "吊牌", items: [""] }, { name: "贴纸", items: [""] }, { name: "卡类 (袜卡/腰封)", items: [""] }, { name: "洗标", items: [""] }] },
+  { location: "China", groups: [{ name: "RFID", items: ["贴纸 44X18MM", "吊牌 45X76MM", "吊牌 45X61MM", "半成品"] }, { name: "吊牌", items: [""] }, { name: "贴纸", items: [""] }, { name: "卡类 (袜卡/腰封)", items: [""] }, { name: "洗标", items: [""] }, { name: "织标", items: [""] }] },
+  { location: "Vietnam", groups: [{ name: "RFID", items: ["贴纸 44X18MM", "吊牌 45X76MM", "吊牌 45X61MM"] }, { name: "吊牌", items: [""] }, { name: "贴纸", items: [""] }, { name: "卡类 (袜卡/腰封)", items: [""] }, { name: "洗标", items: [""] }, { name: "织标", items: [""] }] },
+  { location: "Cambodia", groups: [{ name: "RFID", items: ["贴纸 44X18MM", "吊牌 45X76MM", "吊牌 45X61MM"] }, { name: "吊牌", items: [""] }, { name: "贴纸", items: [""] }, { name: "卡类 (袜卡/腰封)", items: [""] }, { name: "洗标", items: [""] }, { name: "织标", items: [""] }] },
+  { location: "Indonesia", groups: [{ name: "RFID", items: ["贴纸 44X18MM", "吊牌 45X76MM", "吊牌 45X61MM"] }, { name: "吊牌", items: [""] }, { name: "贴纸", items: [""] }, { name: "卡类 (袜卡/腰封)", items: [""] }, { name: "洗标", items: [""] }, { name: "织标", items: [""] }] },
   { location: "Bangladesh", groups: [{ name: "RFID", items: ["贴纸 44X18MM", "吊牌 45X76MM", "吊牌 45X61MM"] }, { name: "吊牌", items: [""] }, { name: "贴纸", items: [""] }, { name: "卡类 (袜卡/腰封)", items: [""] }, { name: "洗标", items: [""] }, { name: "织标", items: [""] }] },
-  { location: "India", groups: [{ name: "RFID", items: ["贴纸 44X18MM", "吊牌 45X76MM", "吊牌 45X61MM"] }, { name: "吊牌", items: [""] }, { name: "贴纸", items: [""] }, { name: "卡类 (袜卡/腰封)", items: [""] }, { name: "洗标", items: [""] } ] }
+  { location: "India", groups: [{ name: "RFID", items: ["贴纸 44X18MM", "吊牌 45X76MM", "吊牌 45X61MM"] }, { name: "吊牌", items: [""] }, { name: "贴纸", items: [""] }, { name: "卡类 (袜卡/腰封)", items: [""] }, { name: "洗标", items: [""] }, { name: "织标", items: [""] } ] }
 ];
 
 /**
