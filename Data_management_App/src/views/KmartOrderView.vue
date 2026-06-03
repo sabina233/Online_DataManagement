@@ -142,6 +142,41 @@
         </div>
     </div>
 
+    <!-- 模块 4: 全球 RFID 占比 -->
+    <div class="summary-section">
+        <div class="section-header">
+            <h3>4. 全球 RFID 占比 (Global RFID Distribution - {{ selectedMonth }}月)</h3>
+        </div>
+        <div class="summary-grid">
+            <div class="card table-card">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>地点</th>
+                            <th>RFID 总量</th>
+                            <th>占比</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr v-for="loc in rfidRatioData" :key="loc.location">
+                            <td>{{ loc.location }}</td>
+                            <td>{{ loc.rfidTotal.toLocaleString() }}</td>
+                            <td class="font-bold text-blue">{{ loc.globalPercent }}%</td>
+                        </tr>
+                        <tr style="background: #f8fafc; font-weight: bold;">
+                            <td>TOTAL</td>
+                            <td>{{ globalRfidTotal.toLocaleString() }}</td>
+                            <td>100%</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            <div class="card chart-card">
+                <ChartComponent :option="globalRfidChartOption" />
+            </div>
+        </div>
+    </div>
+
     <!-- 每日明细矩阵 (Detail Matrix) -->
     <div class="summary-section">
         <div class="section-header">
@@ -363,6 +398,7 @@ const siteWeightData = computed(() => {
 const rfidRatioData = computed(() => {
     // 使用 currentMonthData
     // Need to re-calculate based on currentMonthData for Module 3
+    const allRfidTotal = currentMonthData.value.filter(d => normalizeMatch(d.category) === 'RFID').reduce((s, r) => s + r.quantity, 0);
     return schemaData.map(loc => {
         const locData = currentMonthData.value.filter(d => normalizeMatch(d.location) === normalizeMatch(loc.location));
         const total = locData.reduce((s, r) => s + r.quantity, 0);
@@ -370,9 +406,14 @@ const rfidRatioData = computed(() => {
         return {
             location: loc.location,
             rfidTotal,
-            ratio: total > 0 ? Math.round((rfidTotal / total) * 100) : 0
+            ratio: total > 0 ? Math.round((rfidTotal / total) * 100) : 0,
+            globalPercent: allRfidTotal > 0 ? ((rfidTotal / allRfidTotal) * 100).toFixed(2) : "0"
         };
     });
+});
+
+const globalRfidTotal = computed(() => {
+    return rfidRatioData.value.reduce((s, r) => s + r.rfidTotal, 0);
 });
 
 // --- 图表配置 ---
@@ -414,6 +455,19 @@ const rfidRatioChartOption = computed(() => ({
         data: rfidRatioData.value.map(r => r.ratio),
         type: 'bar' as const,
         label: { show: true, position: 'top' as const, formatter: '{c}%' }
+    }]
+}));
+
+const globalRfidChartOption = computed(() => ({
+    title: { text: '全球 RFID 占比', left: 'center' },
+    tooltip: { trigger: 'item' as const },
+    series: [{
+        type: 'pie' as const,
+        radius: '50%',
+        data: rfidRatioData.value.map(r => ({ value: r.rfidTotal, name: r.location })),
+        emphasis: {
+            itemStyle: { shadowBlur: 10, shadowOffsetX: 0, shadowColor: 'rgba(0, 0, 0, 0.5)' }
+        }
     }]
 }));
 
