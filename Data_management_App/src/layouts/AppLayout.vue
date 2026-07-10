@@ -102,6 +102,14 @@ onMounted(() => {
               </div>
           </RouterLink>
 
+          <!-- Global RFID -->
+          <RouterLink to="/global-rfid" class="nav-item" :class="{ active: route.name === 'global-rfid' }">
+              <div class="flex-row">
+                  <BarChart3 :size="20" />
+                  <span>Global RFID</span>
+              </div>
+          </RouterLink>
+
           <!-- Brand List -->
           <div class="nav-item group-header" @click="toggleBrandMenu">
             <div class="flex-row">

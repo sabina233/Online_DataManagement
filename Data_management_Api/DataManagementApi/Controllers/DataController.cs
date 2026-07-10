@@ -98,6 +98,8 @@ namespace DataManagementApi.Controllers
                 allRecords.AddRange(await _context.DCLRecords.ToListAsync());
                 allRecords.AddRange(await _context.PadiniRecords.ToListAsync());
                 allRecords.AddRange(await _context.KMARTRecords.ToListAsync());
+                allRecords.AddRange(await _context.HADDADRecords.ToListAsync());
+                allRecords.AddRange(await _context.RIVERISLANDRecords.ToListAsync());
                 return allRecords;
             }
 
@@ -117,7 +119,7 @@ namespace DataManagementApi.Controllers
             var brands = new List<string>
             {
                 "Sterilite", "Nike", "TJX", "Landmark-Splash", "Landmark-BBS", "Landmark-MAX",
-                "Nilron", "Walmart", "H&M", "TTI", "TATA", "Inditex", "DCL", "Padini", "KMART"
+                "Nilron", "Walmart", "H&M", "TTI", "TATA", "Inditex", "DCL", "Padini", "KMART", "HADDAD", "RIVER ISLAND"
             };
             return Ok(brands);
         }
@@ -158,6 +160,8 @@ namespace DataManagementApi.Controllers
                 case "DCL": record = System.Text.Json.JsonSerializer.Deserialize<DCLRecord>(json, options); break;
                 case "Padini": record = System.Text.Json.JsonSerializer.Deserialize<PadiniRecord>(json, options); break;
                 case "KMART": record = System.Text.Json.JsonSerializer.Deserialize<KMARTRecord>(json, options); break;
+                case "HADDAD": record = System.Text.Json.JsonSerializer.Deserialize<HADDADRecord>(json, options); break;
+                case "RIVER ISLAND": record = System.Text.Json.JsonSerializer.Deserialize<RIVERISLANDRecord>(json, options); break;
                 default: return BadRequest("Unknown brand");
             }
 
@@ -230,6 +234,8 @@ namespace DataManagementApi.Controllers
                 case "DCL": await _context.DCLRecords.AddAsync((DCLRecord)record); break;
                 case "Padini": await _context.PadiniRecords.AddAsync((PadiniRecord)record); break;
                 case "KMART": await _context.KMARTRecords.AddAsync((KMARTRecord)record); break;
+                case "HADDAD": await _context.HADDADRecords.AddAsync((HADDADRecord)record); break;
+                case "RIVER ISLAND": await _context.RIVERISLANDRecords.AddAsync((RIVERISLANDRecord)record); break;
             }
         }
 
@@ -252,6 +258,8 @@ namespace DataManagementApi.Controllers
                 case "DCL": return _context.DCLRecords;
                 case "Padini": return _context.PadiniRecords;
                 case "KMART": return _context.KMARTRecords;
+                case "HADDAD": return _context.HADDADRecords;
+                case "RIVER ISLAND": return _context.RIVERISLANDRecords;
                 default: throw new Exception("Unknown brand");
             }
         }
@@ -275,6 +283,8 @@ namespace DataManagementApi.Controllers
                 case "DCL": return _context.DCLRecords;
                 case "Padini": return _context.PadiniRecords;
                 case "KMART": return _context.KMARTRecords;
+                case "HADDAD": return _context.HADDADRecords;
+                case "RIVER ISLAND": return _context.RIVERISLANDRecords;
                 default: return null;
             }
         }

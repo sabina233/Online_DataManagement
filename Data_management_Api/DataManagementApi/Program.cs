@@ -73,7 +73,7 @@ using (var scope = app.Services.CreateScope())
         // [MANUAL MIGRATION] Seed Brands
         if (!context.Brands.Any())
         {
-            var defaultBrands = new[] { "Sterilite", "Nike", "TJX", "Landmark-Splash", "Landmark-BBS", "Landmark-MAX", "Nilron", "Walmart", "H&M", "TTI", "TATA", "Inditex", "DCL", "Padini", "KMART" };
+            var defaultBrands = new[] { "Sterilite", "Nike", "TJX", "Landmark-Splash", "Landmark-BBS", "Landmark-MAX", "Nilron", "Walmart", "H&M", "TTI", "TATA", "Inditex", "DCL", "Padini", "KMART", "HADDAD", "RIVER ISLAND" };
             foreach (var b in defaultBrands) context.Brands.Add(new DataManagementApi.Models.Brand { Name = b });
             context.SaveChanges();
         }
@@ -82,7 +82,7 @@ using (var scope = app.Services.CreateScope())
         var recordTables = new[] {
                 "SteriliteRecords", "NikeRecords", "TJXRecords", "LandmarkSplashRecords", "LandmarkBBSRecords",
                 "LandmarkMAXRecords", "NilronRecords", "WalmartRecords", "HMRecords", "TTIRecords",
-                "TATARecords", "InditexRecords", "DCLRecords", "PadiniRecords", "KMARTRecords"
+                "TATARecords", "InditexRecords", "DCLRecords", "PadiniRecords", "KMARTRecords", "HADDADRecords", "RIVERISLANDRecords"
             };
 
         foreach (var table in recordTables)

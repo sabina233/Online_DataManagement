@@ -26,6 +26,8 @@ namespace DataManagementApi.Data
         public DbSet<DCLRecord> DCLRecords { get; set; }
         public DbSet<PadiniRecord> PadiniRecords { get; set; }
         public DbSet<KMARTRecord> KMARTRecords { get; set; }
+        public DbSet<HADDADRecord> HADDADRecords { get; set; }
+        public DbSet<RIVERISLANDRecord> RIVERISLANDRecords { get; set; }
 
         // Brand Site Order Data
         public DbSet<KmartDailyRecord> KmartDailyRecords { get; set; }

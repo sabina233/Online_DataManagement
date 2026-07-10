@@ -15,4 +15,6 @@ namespace DataManagementApi.Models
     public class DCLRecord : BaseRecord { }
     public class PadiniRecord : BaseRecord { }
     public class KMARTRecord : BaseRecord { }
+    public class HADDADRecord : BaseRecord { }
+    public class RIVERISLANDRecord : BaseRecord { }
 }

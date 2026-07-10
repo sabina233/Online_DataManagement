@@ -215,6 +215,91 @@
             </table>
         </div>
     </div>
+
+    <!-- YoY Analysis Location Details Section -->
+    <div class="card yoy-section">
+        <div class="section-toolbar no-header">
+            <h3 style="margin: 0; font-size: 1rem; color: var(--text-main);">YoY Analysis - Location Details</h3>
+            <div class="filter-group" style="margin-left: auto;">
+                <div class="filter-item">
+                    <label>Total Until:</label>
+                    <select v-model="yoyTotalMonthRange" class="input-std">
+                        <option v-for="(m, idx) in monthsList" :key="m.key" :value="idx + 1">{{ m.label }}</option>
+                    </select>
+                </div>
+                <div class="filter-item">
+                    <label>Base Year:</label>
+                    <select v-model="yoyBaseYear" class="input-std">
+                        <option v-for="y in uniqueYears" :key="y" :value="y">{{ y }}</option>
+                    </select>
+                </div>
+                <div class="filter-item">
+                    <label>Target Year:</label>
+                    <select v-model="yoyTargetYear" class="input-std">
+                        <option v-for="y in uniqueYears" :key="y" :value="y">{{ y }}</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <div class="table-scroll" style="max-height: unset; border-top: 1px solid var(--border-light);">
+            <table>
+                <thead>
+                    <tr>
+                        <th class="sticky-col loc-col">Location</th>
+                        <th class="sticky-col item-col">Month</th>
+                        <th>{{ yoyTargetYear }} AC</th>
+                        <th>{{ yoyTargetYear }} FC</th>
+                        <th>{{ yoyBaseYear }} AC</th>
+                        <th>{{ yoyBaseYear }} FC</th>
+                        <th>AC YoY (%)</th>
+                        <th>FC YoY (%)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <template v-for="locGroup in yoyLocationDetailsData" :key="locGroup.location">
+                        <tr v-for="(row, rowIdx) in locGroup.rows" :key="row.location + row.month">
+                            <td v-if="rowIdx === 0" :rowspan="locGroup.rows.length + 1" class="sticky-col loc-col">
+                                {{ row.location }}
+                            </td>
+                            <td class="sticky-col item-col">{{ row.label }}</td>
+                            <td>{{ formatNum(row.currAc) }}</td>
+                            <td>{{ formatNum(row.currFc) }}</td>
+                            <td>{{ formatNum(row.prevAc) }}</td>
+                            <td>{{ formatNum(row.prevFc) }}</td>
+                            <td :class="row.acYoy !== null && row.acYoy < 100 ? 'text-danger' : 'text-success'">
+                                <span v-if="row.acYoy !== null">{{ row.acYoy.toFixed(2) }}%</span>
+                                <span v-else>-</span>
+                            </td>
+                            <td :class="row.fcYoy !== null && row.fcYoy < 100 ? 'text-danger' : 'text-success'">
+                                <span v-if="row.fcYoy !== null">{{ row.fcYoy.toFixed(2) }}%</span>
+                                <span v-else>-</span>
+                            </td>
+                        </tr>
+                        <!-- Total row for this location -->
+                        <tr class="total-row">
+                            <td class="sticky-col item-col" style="font-weight: 600;">Total</td>
+                            <td style="font-weight: 600;">{{ formatNum(locGroup.total.currAc) }}</td>
+                            <td style="font-weight: 600;">{{ formatNum(locGroup.total.currFc) }}</td>
+                            <td style="font-weight: 600;">{{ formatNum(locGroup.total.prevAc) }}</td>
+                            <td style="font-weight: 600;">{{ formatNum(locGroup.total.prevFc) }}</td>
+                            <td :class="locGroup.total.acYoy !== null && locGroup.total.acYoy < 100 ? 'text-danger' : 'text-success'" style="font-weight: 600;">
+                                <span v-if="locGroup.total.acYoy !== null">{{ locGroup.total.acYoy.toFixed(2) }}%</span>
+                                <span v-else>-</span>
+                            </td>
+                            <td :class="locGroup.total.fcYoy !== null && locGroup.total.fcYoy < 100 ? 'text-danger' : 'text-success'" style="font-weight: 600;">
+                                <span v-if="locGroup.total.fcYoy !== null">{{ locGroup.total.fcYoy.toFixed(2) }}%</span>
+                                <span v-else>-</span>
+                            </td>
+                        </tr>
+                    </template>
+                    <tr v-if="yoyLocationDetailsData.length === 0">
+                        <td colspan="8" class="empty-state">{{ t('brand.no_data') || 'No Data' }}</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
   </div>
 </template>
 
@@ -505,7 +590,7 @@ const yoyTableData = computed(() => {
 
 const yoyTotals = computed(() => {
     let currAc = 0, currFc = 0, prevAc = 0, prevFc = 0;
-    
+
     const activeRows = yoyTableData.value.slice(0, yoyTotalMonthRange.value);
     activeRows.forEach(row => {
         currAc += row.currAc;
@@ -522,6 +607,74 @@ const yoyTotals = computed(() => {
         acYoy: acYoy !== null ? Number(acYoy.toFixed(2)) : null,
         fcYoy: fcYoy !== null ? Number(fcYoy.toFixed(2)) : null
     };
+});
+
+// YoY Analysis - Location Details: breaks down each month by location
+const yoyLocationDetailsData = computed(() => {
+    const allRecords = dataStore.records || [];
+    const currYear = yoyTargetYear.value as number;
+    const prevYear = yoyBaseYear.value as number;
+
+    const currYearRecs = allRecords.filter((r: any) => r.year === currYear);
+    const prevYearRecs = allRecords.filter((r: any) => r.year === prevYear);
+
+    // Collect all unique locations
+    const allLocations = [...new Set(allRecords.map(r => r.location).filter(Boolean))] as string[];
+    // Sort locations alphabetically
+    allLocations.sort();
+
+    return allLocations.map(location => {
+        const rows = monthsList.slice(0, yoyTotalMonthRange.value).map(m => {
+            let currAc = 0, currFc = 0;
+            let prevAc = 0, prevFc = 0;
+
+            currYearRecs.filter((r: any) => r.location === location).forEach((r: any) => {
+                currAc += Number(r[`${m.key}_ac`]) || 0;
+                currFc += Number(r[`${m.key}_fc`]) || 0;
+            });
+
+            prevYearRecs.filter((r: any) => r.location === location).forEach((r: any) => {
+                prevAc += Number(r[`${m.key}_ac`]) || 0;
+                prevFc += Number(r[`${m.key}_fc`]) || 0;
+            });
+
+            let acYoy = prevAc === 0 ? null : (currAc / prevAc) * 100;
+            let fcYoy = prevFc === 0 ? null : (currFc / prevFc) * 100;
+
+            return {
+                location,
+                month: m.key,
+                label: m.label,
+                currAc, currFc, prevAc, prevFc,
+                acYoy: acYoy !== null ? Number(acYoy.toFixed(2)) : null,
+                fcYoy: fcYoy !== null ? Number(fcYoy.toFixed(2)) : null
+            };
+        });
+
+        // Calculate total for this location across filtered months
+        let totalCurrAc = 0, totalCurrFc = 0, totalPrevAc = 0, totalPrevFc = 0;
+        rows.forEach(row => {
+            totalCurrAc += row.currAc;
+            totalCurrFc += row.currFc;
+            totalPrevAc += row.prevAc;
+            totalPrevFc += row.prevFc;
+        });
+        const totalAcYoy = totalPrevAc === 0 ? null : (totalCurrAc / totalPrevAc) * 100;
+        const totalFcYoy = totalPrevFc === 0 ? null : (totalCurrFc / totalPrevFc) * 100;
+
+        return {
+            location,
+            rows,
+            total: {
+                currAc: Number(totalCurrAc.toFixed(2)),
+                currFc: Number(totalCurrFc.toFixed(2)),
+                prevAc: Number(totalPrevAc.toFixed(2)),
+                prevFc: Number(totalPrevFc.toFixed(2)),
+                acYoy: totalAcYoy !== null ? Number(totalAcYoy.toFixed(2)) : null,
+                fcYoy: totalFcYoy !== null ? Number(totalFcYoy.toFixed(2)) : null
+            }
+        };
+    });
 });
 
 /**

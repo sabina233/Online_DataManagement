@@ -64,6 +64,12 @@ const router = createRouter({
                     name: 'kmart-entry',
                     component: () => import('../views/KmartEntryView.vue'),
                     meta: { title: 'Kmart 录入' }
+                },
+                {
+                    path: 'global-rfid',
+                    name: 'global-rfid',
+                    component: () => import('../views/GlobalRfidView.vue'),
+                    meta: { title: 'Global RFID 汇总' }
                 }
             ]
         }
