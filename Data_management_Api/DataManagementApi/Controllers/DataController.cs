@@ -85,7 +85,6 @@ namespace DataManagementApi.Controllers
                 var allRecords = new List<BaseRecord>();
                 allRecords.AddRange(await _context.SteriliteRecords.ToListAsync());
                 allRecords.AddRange(await _context.NikeRecords.ToListAsync());
-                allRecords.AddRange(await _context.TJXRecords.ToListAsync());
                 allRecords.AddRange(await _context.LandmarkSplashRecords.ToListAsync());
                 allRecords.AddRange(await _context.LandmarkBBSRecords.ToListAsync());
                 allRecords.AddRange(await _context.LandmarkMAXRecords.ToListAsync());
@@ -118,7 +117,7 @@ namespace DataManagementApi.Controllers
             // 固定返回支持的品牌列表，后续可改为查库
             var brands = new List<string>
             {
-                "Sterilite", "Nike", "TJX", "Landmark-Splash", "Landmark-BBS", "Landmark-MAX",
+                "Sterilite", "Nike", "Landmark-Splash", "Landmark-BBS", "Landmark-MAX",
                 "Nilron", "Walmart", "H&M", "TTI", "TATA", "Inditex", "DCL", "Padini", "KMART", "HADDAD", "RIVER ISLAND"
             };
             return Ok(brands);
@@ -147,7 +146,6 @@ namespace DataManagementApi.Controllers
             {
                 case "Sterilite": record = System.Text.Json.JsonSerializer.Deserialize<SteriliteRecord>(json, options); break;
                 case "Nike": record = System.Text.Json.JsonSerializer.Deserialize<NikeRecord>(json, options); break;
-                case "TJX": record = System.Text.Json.JsonSerializer.Deserialize<TJXRecord>(json, options); break;
                 case "Landmark-Splash": record = System.Text.Json.JsonSerializer.Deserialize<LandmarkSplashRecord>(json, options); break;
                 case "Landmark-BBS": record = System.Text.Json.JsonSerializer.Deserialize<LandmarkBBSRecord>(json, options); break;
                 case "Landmark-MAX": record = System.Text.Json.JsonSerializer.Deserialize<LandmarkMAXRecord>(json, options); break;
@@ -221,7 +219,6 @@ namespace DataManagementApi.Controllers
             {
                 case "Sterilite": await _context.SteriliteRecords.AddAsync((SteriliteRecord)record); break;
                 case "Nike": await _context.NikeRecords.AddAsync((NikeRecord)record); break;
-                case "TJX": await _context.TJXRecords.AddAsync((TJXRecord)record); break;
                 case "Landmark-Splash": await _context.LandmarkSplashRecords.AddAsync((LandmarkSplashRecord)record); break;
                 case "Landmark-BBS": await _context.LandmarkBBSRecords.AddAsync((LandmarkBBSRecord)record); break;
                 case "Landmark-MAX": await _context.LandmarkMAXRecords.AddAsync((LandmarkMAXRecord)record); break;
@@ -245,7 +242,6 @@ namespace DataManagementApi.Controllers
             {
                 case "Sterilite": return _context.SteriliteRecords;
                 case "Nike": return _context.NikeRecords;
-                case "TJX": return _context.TJXRecords;
                 case "Landmark-Splash": return _context.LandmarkSplashRecords;
                 case "Landmark-BBS": return _context.LandmarkBBSRecords;
                 case "Landmark-MAX": return _context.LandmarkMAXRecords;
@@ -270,7 +266,6 @@ namespace DataManagementApi.Controllers
             {
                 case "Sterilite": return _context.SteriliteRecords;
                 case "Nike": return _context.NikeRecords;
-                case "TJX": return _context.TJXRecords;
                 case "Landmark-Splash": return _context.LandmarkSplashRecords;
                 case "Landmark-BBS": return _context.LandmarkBBSRecords;
                 case "Landmark-MAX": return _context.LandmarkMAXRecords;

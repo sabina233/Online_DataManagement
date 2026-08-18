@@ -81,6 +81,53 @@
       </div>
     </div>
 
+    <!-- Location Summary Table -->
+    <div class="card main-card" v-if="locationTableData.length > 0">
+      <div class="section-header">
+        <h3>站点数据汇总 — Location Totals ({{ year1 }} vs {{ year2 }}, Jan~{{ monthsList[selectedMonth - 1]?.label }})</h3>
+      </div>
+
+      <div class="table-scroll">
+        <table>
+          <thead>
+            <tr>
+              <th>LOCATION</th>
+              <th>{{ year1 }} (Jan~{{ monthsList[selectedMonth - 1]?.label }})</th>
+              <th>{{ year2 }} (Jan~{{ monthsList[selectedMonth - 1]?.label }})</th>
+              <th>同比 (%)</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="row in locationTableData" :key="row.location">
+              <td class="font-bold">{{ row.location }}</td>
+              <td>{{ formatNum(row.year1Total) }}</td>
+              <td>{{ formatNum(row.year2Total) }}</td>
+              <td :class="row.yoy !== null && row.yoy < 100 ? 'text-danger' : 'text-success'">
+                <span v-if="row.yoy !== null">{{ row.yoy.toFixed(2) }}%</span>
+                <span v-else>-</span>
+              </td>
+            </tr>
+          </tbody>
+          <tfoot>
+            <tr class="total-row">
+              <td style="font-weight: 600;">TOTAL</td>
+              <td style="font-weight: 600;">{{ formatNum(locationTableTotals.year1Total) }}</td>
+              <td style="font-weight: 600;">{{ formatNum(locationTableTotals.year2Total) }}</td>
+              <td :class="locationTableTotals.yoy !== null && locationTableTotals.yoy < 100 ? 'text-danger' : 'text-success'" style="font-weight: 600;">
+                <span v-if="locationTableTotals.yoy !== null">{{ locationTableTotals.yoy.toFixed(2) }}%</span>
+                <span v-else>-</span>
+              </td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+
+      <!-- Location Bar Chart -->
+      <div class="chart-container">
+        <ChartComponent :option="locationChartOption" />
+      </div>
+    </div>
+
     <!-- Empty state -->
     <div class="card main-card" v-else-if="!loading">
       <div class="empty-state">请选择年份并点击「查询」加载数据</div>
@@ -220,6 +267,86 @@ const chartOption = computed(() => ({
 }));
 
 const formatNum = (n: number) => n?.toLocaleString() || '0';
+
+// Location summary: aggregate all records by location across all brands
+const locationTableData = computed(() => {
+  const locMap = new Map<string, { year1Total: number, year2Total: number }>();
+
+  for (const brand of allBrands.value) {
+    const records = brandDataCache.value.get(brand) || [];
+    const months = monthsKeyList.slice(0, selectedMonth.value);
+
+    records.forEach((r: any) => {
+      const loc = r.location || 'Unknown';
+      if (!locMap.has(loc)) {
+        locMap.set(loc, { year1Total: 0, year2Total: 0 });
+      }
+      const entry = locMap.get(loc)!;
+      if (r.year === year1.value) {
+        months.forEach(m => { entry.year1Total += Number(r[`${m}_ac`]) || 0; });
+      }
+      if (r.year === year2.value) {
+        months.forEach(m => { entry.year2Total += Number(r[`${m}_ac`]) || 0; });
+      }
+    });
+  }
+
+  return Array.from(locMap.entries())
+    .map(([location, vals]) => ({
+      location,
+      year1Total: vals.year1Total,
+      year2Total: vals.year2Total,
+      yoy: vals.year1Total === 0 ? null : (vals.year2Total / vals.year1Total) * 100
+    }))
+    .filter(row => row.year1Total > 0 || row.year2Total > 0)
+    .sort((a, b) => b.year2Total - a.year2Total);
+});
+
+const locationTableTotals = computed(() => {
+  let year1Total = 0, year2Total = 0;
+  locationTableData.value.forEach(row => {
+    year1Total += row.year1Total;
+    year2Total += row.year2Total;
+  });
+  const yoy = year1Total === 0 ? null : (year2Total / year1Total) * 100;
+  return { year1Total, year2Total, yoy };
+});
+
+const locationChartOption = computed(() => ({
+  title: {
+    text: `${year1.value} vs ${year2.value} 站点数据对比 (Jan~${monthsList[selectedMonth.value - 1]?.label})`,
+    left: 'center'
+  },
+  tooltip: {
+    trigger: 'axis' as const,
+    axisPointer: { type: 'shadow' as const }
+  },
+  legend: {
+    data: [`${year1.value} 总计`, `${year2.value} 总计`],
+    bottom: 0
+  },
+  xAxis: {
+    type: 'category' as const,
+    data: locationTableData.value.map(r => r.location)
+  },
+  yAxis: {
+    type: 'value' as const
+  },
+  series: [
+    {
+      name: `${year1.value} 总计`,
+      type: 'bar' as const,
+      data: locationTableData.value.map(r => r.year1Total),
+      label: { show: false }
+    },
+    {
+      name: `${year2.value} 总计`,
+      type: 'bar' as const,
+      data: locationTableData.value.map(r => r.year2Total),
+      label: { show: false }
+    }
+  ]
+}));
 
 // Auto-load on mount
 fetchBrands();

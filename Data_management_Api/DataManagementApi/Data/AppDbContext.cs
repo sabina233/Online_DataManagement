@@ -13,7 +13,6 @@ namespace DataManagementApi.Data
 
         public DbSet<SteriliteRecord> SteriliteRecords { get; set; }
         public DbSet<NikeRecord> NikeRecords { get; set; }
-        public DbSet<TJXRecord> TJXRecords { get; set; }
         public DbSet<LandmarkSplashRecord> LandmarkSplashRecords { get; set; }
         public DbSet<LandmarkBBSRecord> LandmarkBBSRecords { get; set; }
         public DbSet<LandmarkMAXRecord> LandmarkMAXRecords { get; set; }

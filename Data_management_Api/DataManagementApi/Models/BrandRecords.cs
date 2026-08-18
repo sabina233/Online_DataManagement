@@ -2,7 +2,6 @@ namespace DataManagementApi.Models
 {
     public class SteriliteRecord : BaseRecord { }
     public class NikeRecord : BaseRecord { }
-    public class TJXRecord : BaseRecord { }
     public class LandmarkSplashRecord : BaseRecord { }
     public class LandmarkBBSRecord : BaseRecord { }
     public class LandmarkMAXRecord : BaseRecord { }
