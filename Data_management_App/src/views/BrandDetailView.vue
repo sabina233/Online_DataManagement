@@ -618,8 +618,13 @@ const yoyLocationDetailsData = computed(() => {
     const currYearRecs = allRecords.filter((r: any) => r.year === currYear);
     const prevYearRecs = allRecords.filter((r: any) => r.year === prevYear);
 
-    // Collect all unique locations
-    const allLocations = [...new Set(allRecords.map(r => r.location).filter(Boolean))] as string[];
+    // Collect all unique display locations (merge same location across different items)
+    const displayLocationMap = new Map<string, string>();
+    allRecords.forEach((r: any) => {
+        const displayLoc = getDisplayLocation(r.location);
+        if (displayLoc) displayLocationMap.set(displayLoc, displayLoc);
+    });
+    const allLocations = Array.from(displayLocationMap.keys());
     // Sort locations alphabetically
     allLocations.sort();
 
@@ -628,12 +633,12 @@ const yoyLocationDetailsData = computed(() => {
             let currAc = 0, currFc = 0;
             let prevAc = 0, prevFc = 0;
 
-            currYearRecs.filter((r: any) => r.location === location).forEach((r: any) => {
+            currYearRecs.filter((r: any) => getDisplayLocation(r.location) === location).forEach((r: any) => {
                 currAc += Number(r[`${m.key}_ac`]) || 0;
                 currFc += Number(r[`${m.key}_fc`]) || 0;
             });
 
-            prevYearRecs.filter((r: any) => r.location === location).forEach((r: any) => {
+            prevYearRecs.filter((r: any) => getDisplayLocation(r.location) === location).forEach((r: any) => {
                 prevAc += Number(r[`${m.key}_ac`]) || 0;
                 prevFc += Number(r[`${m.key}_fc`]) || 0;
             });

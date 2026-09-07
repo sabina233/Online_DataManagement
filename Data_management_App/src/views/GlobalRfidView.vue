@@ -268,7 +268,19 @@ const chartOption = computed(() => ({
 
 const formatNum = (n: number) => n?.toLocaleString() || '0';
 
-// Location summary: aggregate all records by location across all brands
+// Normalize location for display/merge: trim + uppercase; collapse Landmark store codes to country
+const getDisplayLocation = (loc: string, brand: string) => {
+    if (!loc) return 'Unknown';
+    const clean = loc.toString().trim();
+    if (!clean) return 'Unknown';
+    if (brand === 'Landmark-Splash') {
+        const country = clean.substring(0, 2).toUpperCase();
+        return ['CN', 'BD', 'IN', 'TK', 'VN', 'KH', 'ID'].includes(country) ? country : clean;
+    }
+    return clean;
+};
+
+// Location summary: aggregate all records by location across all brands (merge same location, different items)
 const locationTableData = computed(() => {
   const locMap = new Map<string, { year1Total: number, year2Total: number }>();
 
@@ -277,7 +289,7 @@ const locationTableData = computed(() => {
     const months = monthsKeyList.slice(0, selectedMonth.value);
 
     records.forEach((r: any) => {
-      const loc = r.location || 'Unknown';
+      const loc = getDisplayLocation(r.location, brand);
       if (!locMap.has(loc)) {
         locMap.set(loc, { year1Total: 0, year2Total: 0 });
       }
