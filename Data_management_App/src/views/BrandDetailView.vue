@@ -752,9 +752,11 @@ const formatNum = (n: number) => n?.toLocaleString() || '0';
 
 .table-container { padding: 0; overflow: hidden; margin-top: 12px; }
 .table-scroll { overflow-x: auto; width: 100%; max-height: 70vh; }
-.yoy-section { overflow: hidden; }
+/* .yoy-section { overflow: hidden; }
 .yoy-section .table-scroll { overflow-x: auto; max-height: unset; }
-.yoy-section th { position: static; }
+.yoy-section th { position: static; } */
+.yoy-section { overflow: visible !important; }
+.yoy-section .table-scroll { overflow: visible; }
 
 table { width: 100%; border-collapse: separate; border-spacing: 0; }
 
@@ -767,14 +769,14 @@ th, td {
     font-size: 0.9rem;
 }
 
-th { background-color: #f8fafc; font-weight: 600; color: var(--text-secondary); position: sticky; top: 0; z-index: 50; box-shadow: 0 1px 0 var(--border-light); }
+th { background-color: #f8fafc; font-weight: 600; color: var(--text-secondary); position: sticky; top: -33px; z-index: 50; box-shadow: 0 1px 0 var(--border-light); }
 
 /* Sticky Columns */
 .sticky-col { position: sticky; background-color: white; z-index: 20; text-align: left; }
 .loc-col { left: 0; width: 120px; border-right: 1px solid #e2e8f0; }
 .item-col { left: 80px; width: 120px; border-right: 2px solid #cbd5e1; }
 
-th.sticky-col { z-index: 60; background-color: #f8fafc; top: 0; }
+th.sticky-col { z-index: 60; background-color: #f8fafc; top: -33px; }
 
 /* Highlights */
 .q-header { background-color: #e0f2fe; color: #0369a1; }
