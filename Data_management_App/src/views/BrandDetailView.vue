@@ -771,6 +771,17 @@ th, td {
 
 th { background-color: #f8fafc; font-weight: 600; color: var(--text-secondary); position: sticky; top: -33px; z-index: 50; box-shadow: 0 1px 0 var(--border-light); }
 
+.total-row td,
+.total-cell {
+  background-color: #fef08a !important; /* Classic Excel/PPT highlight yellow block */
+  border-top: 2px solid #eab308 !important;
+  border-bottom: 2px solid #eab308 !important;
+  font-weight: 700 !important;
+  color: #854d0e !important;
+}
+
+
+
 /* Sticky Columns */
 .sticky-col { position: sticky; background-color: white; z-index: 20; text-align: left; }
 .loc-col { left: 0; width: 120px; border-right: 1px solid #e2e8f0; }
