@@ -752,8 +752,9 @@ const formatNum = (n: number) => n?.toLocaleString() || '0';
 
 .table-container { padding: 0; overflow: hidden; margin-top: 12px; }
 .table-scroll { overflow-x: auto; width: 100%; max-height: 70vh; }
-.yoy-section { overflow: visible !important; }
-.yoy-section .table-scroll { overflow: visible; }
+.yoy-section { overflow: hidden; }
+.yoy-section .table-scroll { overflow-x: auto; max-height: unset; }
+.yoy-section th { position: static; }
 
 table { width: 100%; border-collapse: separate; border-spacing: 0; }
 
