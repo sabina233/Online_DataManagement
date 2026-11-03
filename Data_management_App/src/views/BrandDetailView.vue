@@ -334,8 +334,13 @@ const diffMonthRange = ref(12); // Default to December (Full Year)
  * 获取当前品牌下的所有唯一大区列表，用于筛选下拉框
  */
 const uniqueLocations = computed(() => {
-    const locs = dataStore.records.map(r => r.location).filter(Boolean) as string[];
-    return Array.from(new Set(locs));
+    // 使用与图表一致的归一化 location，避免大小写/空格差异导致同一地点重复出现
+    const locs: string[] = [];
+    dataStore.records.forEach((r: any) => {
+        const loc = getDisplayLocation(r.location);
+        if (loc && loc !== 'Unknown' && !locs.includes(loc)) locs.push(loc);
+    });
+    return locs;
 });
 
 // 月份常量定义
@@ -395,22 +400,31 @@ const filteredRecords = computed(() => {
          recs = recs.filter(r => r.year === y);
     }
     if (locationFilter.value !== 'All') {
-        recs = recs.filter(r => r.location === locationFilter.value);
+        // 使用归一化 location 过滤，与图表的分组合并保持一致
+        recs = recs.filter(r => getDisplayLocation(r.location) === locationFilter.value);
     }
     return recs; 
 });
 
 /**
- * 获取用于展示的地区名称
- * 针对 "Landmark-Splash" 品牌，取前两个字符（国家代码）聚合
+ * 获取用于展示/聚合的地区名称（所有品牌统一）
+ * 1. 归一化：去掉首尾空格、全角转半角、统一大写，保证同一地点因格式差异也能合并
+ * 2. 针对 "Landmark-Splash" 品牌，店铺编码（如 CN-01）归并为国家代码（CN）
+ * 三张图表与筛选下拉框共用该函数，确保相同 Location 的记录合并展示
  */
-const getDisplayLocation = (loc: string) => {
+const getDisplayLocation = (loc: string | undefined | null) => {
     if (!loc) return 'Unknown';
+    // 全角转半角 + 统一大写 + 去空格
+    const clean = loc.toString()
+        .normalize('NFKC')
+        .trim()
+        .toUpperCase();
+    if (!clean) return 'Unknown';
     if (currentBrand.value === 'Landmark-Splash') {
-        const country = loc.substring(0, 2).toUpperCase();
-        return ['CN', 'BD', 'IN', 'TK', 'VN', 'KH', 'ID'].includes(country) ? country : loc;
+        const country = clean.substring(0, 2);
+        return ['CN', 'BD', 'IN', 'TK', 'VN', 'KH', 'ID'].includes(country) ? country : clean;
     }
-    return loc;
+    return clean;
 };
 
 /**

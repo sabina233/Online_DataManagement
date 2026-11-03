@@ -268,13 +268,17 @@ const chartOption = computed(() => ({
 
 const formatNum = (n: number) => n?.toLocaleString() || '0';
 
-// Normalize location for display/merge: trim + uppercase; collapse Landmark store codes to country
+// Normalize location for display/merge (all brands consistent): NFKC full-width->half-width,
+// trim, uppercase; Landmark store codes collapse to country code
 const getDisplayLocation = (loc: string, brand: string) => {
     if (!loc) return 'Unknown';
-    const clean = loc.toString().trim();
+    const clean = loc.toString()
+        .normalize('NFKC')
+        .trim()
+        .toUpperCase();
     if (!clean) return 'Unknown';
     if (brand === 'Landmark-Splash') {
-        const country = clean.substring(0, 2).toUpperCase();
+        const country = clean.substring(0, 2);
         return ['CN', 'BD', 'IN', 'TK', 'VN', 'KH', 'ID'].includes(country) ? country : clean;
     }
     return clean;
