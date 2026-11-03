@@ -162,7 +162,7 @@
             </div>
         </div>
         
-        <div class="table-scroll" style="max-height: unset; border-top: 1px solid var(--border-light);">
+        <div class="table-scroll yoy-table-scroll">
             <table>
                 <thead>
                     <tr>
@@ -242,7 +242,7 @@
             </div>
         </div>
 
-        <div class="table-scroll" style="max-height: unset; border-top: 1px solid var(--border-light);">
+        <div class="table-scroll yoy-table-scroll">
             <table>
                 <thead>
                     <tr>
@@ -494,15 +494,32 @@ const trendChart = computed(() => {
     });
 
     const displayLocs = Array.from(aggregatedSeries.keys());
-    const colors = ['#3b82f6', '#ef4444', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899', '#6366f1', '#14b8a6'];
+    const DISTINCT_COLORS = [
+        '#2563eb', '#16a34a', '#dc2626', '#d97706', '#9333ea',
+        '#0891b2', '#db2777', '#84cc16', '#ea580c', '#4f46e5',
+        '#0d9488', '#b91c1c', '#7c3aed', '#eab308', '#0284c7',
+        '#be185d', '#059669', '#64748b', '#854d0e', '#6d28d9',
+        '#0369a1', '#be123c', '#15803d', '#a16207', '#581c87',
+        '#0e7490', '#9f1239', '#1e40af', '#4d7c0f', '#831843'
+    ];
+    const getLineColor = (index: number, total: number) => {
+        if (index < DISTINCT_COLORS.length) return DISTINCT_COLORS[index];
+        const hue = Math.round((index * (360 / Math.max(total, 1))) % 360);
+        return `hsl(${hue}, 80%, 42%)`;
+    };
     
-    const series = displayLocs.map((loc, idx) => ({
+    const series = displayLocs.map((loc, idx) => {
+        const color = getLineColor(idx, displayLocs.length);
+        return {
         name: loc,
         type: 'line' as const,
         data: aggregatedSeries.get(loc)!,
         smooth: true,
-        itemStyle: { color: colors[idx % colors.length] }
-    }));
+        color: color,
+        itemStyle: { color: color },
+        lineStyle: { color: color, width: 2 }
+    };
+    });
 
     return {
         xAxis: xAxis,
@@ -735,6 +752,7 @@ const formatNum = (n: number) => n?.toLocaleString() || '0';
 
 .table-container { padding: 0; overflow: hidden; margin-top: 12px; }
 .table-scroll { overflow-x: auto; width: 100%; max-height: 70vh; }
+.yoy-table-scroll { max-height: 560px; overflow-y: auto; overflow-x: auto; border-top: 1px solid var(--border-light); }
 
 table { width: 100%; border-collapse: separate; border-spacing: 0; }
 
@@ -747,14 +765,14 @@ th, td {
     font-size: 0.9rem;
 }
 
-th { background-color: #f8fafc; font-weight: 600; color: var(--text-secondary); position: sticky; top: 0; z-index: 30; }
+th { background-color: #f8fafc; font-weight: 600; color: var(--text-secondary); position: sticky; top: 0; z-index: 50; box-shadow: 0 1px 0 var(--border-light); }
 
 /* Sticky Columns */
-.sticky-col { position: sticky; background-color: white; z-index: 40; text-align: left; }
+.sticky-col { position: sticky; background-color: white; z-index: 20; text-align: left; }
 .loc-col { left: 0; width: 120px; border-right: 1px solid #e2e8f0; }
 .item-col { left: 80px; width: 120px; border-right: 2px solid #cbd5e1; }
 
-th.sticky-col { z-index: 50; background-color: #f8fafc; }
+th.sticky-col { z-index: 60; background-color: #f8fafc; top: 0; }
 
 /* Highlights */
 .q-header { background-color: #e0f2fe; color: #0369a1; }

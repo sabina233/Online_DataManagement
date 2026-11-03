@@ -22,6 +22,10 @@ namespace DataManagementApi.Data
         public DbSet<TTIRecord> TTIRecords { get; set; }
         public DbSet<TATARecord> TATARecords { get; set; }
         public DbSet<InditexRecord> InditexRecords { get; set; }
+        public DbSet<MGARecord> MGARecords { get; set; }
+        public DbSet<PARecord> PARecords { get; set; }
+        public DbSet<LVPRecord> LVPRecords { get; set; }
+        public DbSet<PRIMARKRecord> PRIMARKRecords { get; set; }
         public DbSet<DCLRecord> DCLRecords { get; set; }
         public DbSet<PadiniRecord> PadiniRecords { get; set; }
         public DbSet<KMARTRecord> KMARTRecords { get; set; }

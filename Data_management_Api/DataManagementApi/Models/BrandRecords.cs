@@ -11,6 +11,10 @@ namespace DataManagementApi.Models
     public class TTIRecord : BaseRecord { }
     public class TATARecord : BaseRecord { }
     public class InditexRecord : BaseRecord { }
+    public class MGARecord : BaseRecord { }
+    public class PARecord : BaseRecord { }
+    public class LVPRecord : BaseRecord { }
+    public class PRIMARKRecord : BaseRecord { }
     public class DCLRecord : BaseRecord { }
     public class PadiniRecord : BaseRecord { }
     public class KMARTRecord : BaseRecord { }

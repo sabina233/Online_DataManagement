@@ -92,6 +92,10 @@ namespace DataManagementApi.Controllers
                 allRecords.AddRange(await _context.WalmartRecords.ToListAsync());
                 allRecords.AddRange(await _context.HMRecords.ToListAsync());
                 allRecords.AddRange(await _context.TTIRecords.ToListAsync());
+                allRecords.AddRange(await _context.MGARecords.ToListAsync());
+                allRecords.AddRange(await _context.PARecords.ToListAsync());
+                allRecords.AddRange(await _context.LVPRecords.ToListAsync());
+                allRecords.AddRange(await _context.PRIMARKRecords.ToListAsync());
                 allRecords.AddRange(await _context.TATARecords.ToListAsync());
                 allRecords.AddRange(await _context.InditexRecords.ToListAsync());
                 allRecords.AddRange(await _context.DCLRecords.ToListAsync());
@@ -114,11 +118,11 @@ namespace DataManagementApi.Controllers
         [HttpGet("brands")]
         public async Task<ActionResult<IEnumerable<string>>> GetBrands()
         {
-            // 固定返回支持的品牌列表，后续可改为查库
+            // 固定返回支持的品牌列表（删除TATA、Inditex，增加MGA、PA、LVP、PRIMARK）
             var brands = new List<string>
             {
                 "Sterilite", "Nike", "Landmark-Splash", "Landmark-BBS", "Landmark-MAX",
-                "Nilron", "Walmart", "H&M", "TTI", "TATA", "Inditex", "DCL", "Padini", "KMART", "HADDAD", "RIVER ISLAND"
+                "Nilron", "Walmart", "H&M", "TTI", "MGA", "PA", "LVP", "PRIMARK", "DCL", "Padini", "KMART", "HADDAD", "RIVER ISLAND"
             };
             return Ok(brands);
         }
@@ -153,6 +157,10 @@ namespace DataManagementApi.Controllers
                 case "Walmart": record = System.Text.Json.JsonSerializer.Deserialize<WalmartRecord>(json, options); break;
                 case "H&M": record = System.Text.Json.JsonSerializer.Deserialize<HMRecord>(json, options); break;
                 case "TTI": record = System.Text.Json.JsonSerializer.Deserialize<TTIRecord>(json, options); break;
+                case "MGA": record = System.Text.Json.JsonSerializer.Deserialize<MGARecord>(json, options); break;
+                case "PA": record = System.Text.Json.JsonSerializer.Deserialize<PARecord>(json, options); break;
+                case "LVP": record = System.Text.Json.JsonSerializer.Deserialize<LVPRecord>(json, options); break;
+                case "PRIMARK": record = System.Text.Json.JsonSerializer.Deserialize<PRIMARKRecord>(json, options); break;
                 case "TATA": record = System.Text.Json.JsonSerializer.Deserialize<TATARecord>(json, options); break;
                 case "Inditex": record = System.Text.Json.JsonSerializer.Deserialize<InditexRecord>(json, options); break;
                 case "DCL": record = System.Text.Json.JsonSerializer.Deserialize<DCLRecord>(json, options); break;
@@ -181,7 +189,6 @@ namespace DataManagementApi.Controllers
 
             CalculateComputedFields(record);
             await AddRecordToDb(brand, record);
-            await _context.SaveChangesAsync();
             await _context.SaveChangesAsync();
             return Ok(record);
         }
@@ -226,6 +233,10 @@ namespace DataManagementApi.Controllers
                 case "Walmart": await _context.WalmartRecords.AddAsync((WalmartRecord)record); break;
                 case "H&M": await _context.HMRecords.AddAsync((HMRecord)record); break;
                 case "TTI": await _context.TTIRecords.AddAsync((TTIRecord)record); break;
+                case "MGA": await _context.MGARecords.AddAsync((MGARecord)record); break;
+                case "PA": await _context.PARecords.AddAsync((PARecord)record); break;
+                case "LVP": await _context.LVPRecords.AddAsync((LVPRecord)record); break;
+                case "PRIMARK": await _context.PRIMARKRecords.AddAsync((PRIMARKRecord)record); break;
                 case "TATA": await _context.TATARecords.AddAsync((TATARecord)record); break;
                 case "Inditex": await _context.InditexRecords.AddAsync((InditexRecord)record); break;
                 case "DCL": await _context.DCLRecords.AddAsync((DCLRecord)record); break;
@@ -249,6 +260,10 @@ namespace DataManagementApi.Controllers
                 case "Walmart": return _context.WalmartRecords;
                 case "H&M": return _context.HMRecords;
                 case "TTI": return _context.TTIRecords;
+                case "MGA": return _context.MGARecords;
+                case "PA": return _context.PARecords;
+                case "LVP": return _context.LVPRecords;
+                case "PRIMARK": return _context.PRIMARKRecords;
                 case "TATA": return _context.TATARecords;
                 case "Inditex": return _context.InditexRecords;
                 case "DCL": return _context.DCLRecords;
@@ -273,6 +288,10 @@ namespace DataManagementApi.Controllers
                 case "Walmart": return _context.WalmartRecords;
                 case "H&M": return _context.HMRecords;
                 case "TTI": return _context.TTIRecords;
+                case "MGA": return _context.MGARecords;
+                case "PA": return _context.PARecords;
+                case "LVP": return _context.LVPRecords;
+                case "PRIMARK": return _context.PRIMARKRecords;
                 case "TATA": return _context.TATARecords;
                 case "Inditex": return _context.InditexRecords;
                 case "DCL": return _context.DCLRecords;

@@ -5,7 +5,14 @@ import * as echarts from 'echarts';
 const props = defineProps<{
     title?: string;
     xAxisData?: string[];
-    seriesData?: { name: string; type: 'bar' | 'line'; data: number[] }[];
+    seriesData?: { 
+        name: string; 
+        type: 'bar' | 'line'; 
+        data: number[]; 
+        itemStyle?: any; 
+        lineStyle?: any; 
+        color?: string;
+    }[];
     option?: echarts.EChartsOption;
 }>();
 
@@ -23,11 +30,13 @@ const setOptions = () => {
     if (!chartInstance) return;
 
     if (props.option) {
-        chartInstance.setOption(props.option);
+        chartInstance.setOption(props.option, true);
         return;
     }
 
-    const option = {
+    const seriesColors = props.seriesData?.map(s => s.itemStyle?.color || s.color).filter(Boolean);
+
+    const option: echarts.EChartsOption = {
         title: {
             text: props.title || '',
             left: 'center'
@@ -53,12 +62,14 @@ const setOptions = () => {
         yAxis: {
             type: 'value'
         },
+        ...(seriesColors && seriesColors.length > 0 ? { color: seriesColors as string[] } : {}),
         series: props.seriesData?.map(s => ({
             name: s.name,
             type: s.type,
             data: s.data,
             smooth: true,
-            itemStyle: s.type === 'bar' ? { borderRadius: [4, 4, 0, 0] } : undefined
+            itemStyle: s.itemStyle || (s.type === 'bar' ? { borderRadius: [4, 4, 0, 0] } : undefined),
+            lineStyle: s.lineStyle || undefined
         })) || []
     };
 
