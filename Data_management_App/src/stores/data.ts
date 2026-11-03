@@ -53,7 +53,7 @@ export const useDataStore = defineStore('data', () => {
             const res = await api.get<string[]>('/Data/brands');
             if (res.data && res.data.length > 0) {
                 // Backend now returns the authoritative list of 15 brands
-                brands.value = res.data;
+                brands.value = [...res.data].sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' }));
             }
         } catch (e) {
             console.error('获取品牌列表失败:', e);

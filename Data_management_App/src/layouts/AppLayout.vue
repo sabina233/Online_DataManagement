@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, computed } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
 import { useAuthStore } from '../stores/auth';
 import { useDataStore } from '../stores/data';
@@ -31,6 +31,10 @@ const { t, locale } = useI18n();
 const isBrandMenuOpen = ref(true);
 const isKmartMenuOpen = ref(true); // Default open for Kmart
 const isUserMenuOpen = ref(false);
+
+const sortedBrands = computed(() => {
+  return [...dataStore.brands].sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' }));
+});
 
 /**
  * 菜单切换逻辑
@@ -121,7 +125,7 @@ onMounted(() => {
           
           <div v-if="isBrandMenuOpen" class="sub-nav">
             <div 
-              v-for="brand in dataStore.brands" 
+              v-for="brand in sortedBrands" 
               :key="brand"
               class="sub-nav-item"
               :class="{ active: route.params.name === brand }"

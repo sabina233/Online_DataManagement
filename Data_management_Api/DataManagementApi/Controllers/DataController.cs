@@ -124,7 +124,7 @@ namespace DataManagementApi.Controllers
                 "Sterilite", "Nike", "Landmark-Splash", "Landmark-BBS", "Landmark-MAX",
                 "Nilron", "Walmart", "H&M", "TTI", "MGA", "PA", "LVP", "PRIMARK", "DCL", "Padini", "KMART", "HADDAD", "RIVER ISLAND"
             };
-            return Ok(brands);
+            return Ok(brands.OrderBy(b => b, StringComparer.OrdinalIgnoreCase).ToList());
         }
 
         /// <summary>

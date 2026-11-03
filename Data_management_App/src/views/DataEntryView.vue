@@ -12,7 +12,7 @@
                 <label>Brand:</label>
                 <select v-model="selectedBrand" class="input-std brand-select">
                     <option disabled value="">Select Brand</option>
-                    <option v-for="b in dataStore.brands" :key="b" :value="b">{{ b }}</option>
+                    <option v-for="b in sortedBrands" :key="b" :value="b">{{ b }}</option>
                 </select>
             </div>
             <div class="filter-item">
@@ -203,7 +203,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch, nextTick } from 'vue';
+import { ref, watch, nextTick, computed } from 'vue';
 import { useAuthStore } from '../stores/auth';
 import { useDataStore } from '../stores/data';
 import { useI18n } from 'vue-i18n';
@@ -216,6 +216,10 @@ import * as XLSX from 'xlsx';
 const authStore = useAuthStore();
 const dataStore = useDataStore();
 const { t } = useI18n();
+
+const sortedBrands = computed(() => {
+    return [...dataStore.brands].sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' }));
+});
 
 // 定义月份常量，用于动态生成表格列
 const months = [
